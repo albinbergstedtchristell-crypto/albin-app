@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeLearn</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#0f172a;
+    color:white;
+    text-align:center;
+    margin:0;
+}
+
+.container{
+    margin-top:80px;
+}
+
+.card{
+    background:#1e293b;
+    padding:25px;
+    border-radius:12px;
+    display:inline-block;
+    min-width:280px;
+}
+
+input{
+    padding:10px;
+    margin:8px;
+    border:none;
+    border-radius:8px;
+    width:220px;
+}
+
+button{
+    padding:10px 20px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    margin:5px;
+    background:#22d3ee;
+    font-weight:bold;
+}
+
+button:hover{
+    opacity:0.8;
+}
+
+.hidden{
+    display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- LOGIN -->
+<div id="loginBox" class="card">
+    <h2>Logga in</h2>
+    <input type="text" id="loginUser" placeholder="Användarnamn"><br>
+    <input type="password" id="loginPass" placeholder="Lösenord"><br>
+    <button onclick="login()">Logga in</button>
+    <p>Har du inget konto?</p>
+    <button onclick="showRegister()">Registrera</button>
+</div>
+
+<!-- REGISTER -->
+<div id="registerBox" class="card hidden">
+    <h2>Registrera</h2>
+    <input type="text" id="regUser" placeholder="Användarnamn"><br>
+    <input type="password" id="regPass" placeholder="Lösenord"><br>
+    <button onclick="register()">Skapa konto</button><br>
+    <button onclick="showLogin()">Tillbaka</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="hidden">
+    <h1>Välkommen <span id="userDisplay"></span> 👋</h1>
+    <button onclick="logout()">Logga ut</button>
+
+    <div id="adminPanel" class="hidden">
+        <h2>Admin Panel</h2>
+        <button onclick="showUsers()">Visa alla användare</button>
+        <div id="userList"></div>
+    </div>
+</div>
+
+</div>
+
+<script>
+
+// Skapa admin om det inte finns
+if(!localStorage.getItem("users")){
+    const defaultUsers = [
+        {username:"admin", password:"admin123", role:"admin"}
+    ];
+    localStorage.setItem("users", JSON.stringify(defaultUsers));
+}
+
+function getUsers(){
+    return JSON.parse(localStorage.getItem("users"));
+}
+
+function saveUsers(users){
+    localStorage.setItem("users", JSON.stringify(users));
+}
+
+function register(){
+    const username = document.getElementById("regUser").value;
+    const password = document.getElementById("regPass").value;
+
+    if(username === "" || password === ""){
+        alert("Fyll i alla fält!");
+        return;
+    }
+
+    let users = getUsers();
+
+    if(users.find(user => user.username === username)){
+        alert("Användarnamnet finns redan!");
+        return;
+    }
+
+    users.push({username, password, role:"user"});
+    saveUsers(users);
+
+    alert("Konto skapat!");
+    showLogin();
+}
+
+function login(){
+    const username = document.getElementById("loginUser").value;
+    const password = document.getElementById("loginPass").value;
+
+    const users = getUsers();
+    const user = users.find(user => user.username === username && user.password === password);
+
+    if(user){
+        localStorage.setItem("loggedInUser", JSON.stringify(user));
+        loadDashboard();
+    } else {
+        alert("Fel användarnamn eller lösenord!");
+    }
+}
+
+function loadDashboard(){
+    const user = JSON.parse(localStorage.getItem("loggedInUser"));
+
+    if(user){
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("registerBox").classList.add("hidden");
+        document.getElementById("dashboard").classList.remove("hidden");
+
+        document.getElementById("userDisplay").textContent = user.username;
+
+        if(user.role === "admin"){
+            document.getElementById("adminPanel").classList.remove("hidden");
+        }
+    }
+}
+
+function logout(){
+    localStorage.removeItem("loggedInUser");
+    location.reload();
+}
+
+function showRegister(){
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("registerBox").classList.remove("hidden");
+}
+
+function showLogin(){
+    document.getElementById("registerBox").classList.add("hidden");
+    document.getElementById("loginBox").classList.remove("hidden");
+}
+
+function showUsers(){
+    const users = getUsers();
+    let list = "<h3>Användare:</h3>";
+
+    users.forEach(user => {
+        list += "<p>" + user.username + " (" + user.role + ")</p>";
+    });
+
+    document.getElementById("userList").innerHTML = list;
+}
+
+// Auto-login
+loadDashboard();
+
+</script>
+
+</body>
+</html>
