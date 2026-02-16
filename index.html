@@ -3,122 +3,168 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tips App</title>
+<title>Tips System</title>
 
 <style>
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #1e1e2f, #2b2b45);
-    color: white;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    text-align: center;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #1e1e2f, #2b2b45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  color: white;
 }
 
 .container {
-    background: #2f2f4f;
-    padding: 30px;
-    border-radius: 15px;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  background: #2f2f4f;
+  padding: 30px;
+  border-radius: 15px;
+  width: 350px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
 }
 
 input, textarea {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 8px;
-    border: none;
-    font-size: 16px;
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 8px;
 }
 
 button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    background: #6c5ce7;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border: none;
+  border-radius: 8px;
+  background: #4c6ef5;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
 }
 
 button:hover {
-    background: #8577ff;
+  background: #364fc7;
+}
+
+#welcome {
+  display: none;
 }
 
 ul {
-    text-align: left;
-    padding-left: 20px;
+  text-align: left;
+  padding-left: 20px;
 }
 </style>
 </head>
-
 <body>
 
-<div class="container">
+<!-- LOGIN / REGISTER -->
+<div class="container" id="authBox">
+  <h2>Logga in / Skapa konto</h2>
+  <input id="username" type="text" placeholder="Användarnamn">
+  <input id="password" type="password" placeholder="Lösenord">
+  <button onclick="login()">Logga in</button>
+  <button onclick="register()">Skapa konto</button>
+</div>
 
-    <!-- LOGIN -->
-    <div id="loginSection">
-        <h2>Logga in</h2>
-        <input type="text" id="username" placeholder="Användarnamn">
-        <input type="password" id="password" placeholder="Lösenord">
-        <button onclick="login()">Logga in</button>
-    </div>
+<!-- AFTER LOGIN -->
+<div class="container" id="welcome">
+  <h2 id="welcomeText"></h2>
 
-    <!-- TIPS -->
-    <div id="tipsSection" style="display:none;">
-        <h2>Snälla ge mig lite tips på vad jag ska göra för något</h2>
-        <textarea id="tipInput" placeholder="Skriv ditt tips här..."></textarea>
-        <button onclick="saveTip()">Skicka tips</button>
+  <h3>Snälla ge mig lite tips på vad jag ska göra för något</h3>
+  <textarea id="tipInput" placeholder="Skriv ditt tips..."></textarea>
+  <button onclick="saveTip()">Skicka</button>
 
-        <h3>Sparade tips:</h3>
-        <ul id="tipsList"></ul>
-    </div>
+  <h4>Dina tips:</h4>
+  <ul id="tipsList"></ul>
 
+  <button onclick="logout()">Logga ut</button>
 </div>
 
 <script>
-function login() {
-    const user = document.getElementById("username").value;
-    const pass = document.getElementById("password").value;
+let currentUser = null;
 
-    if (user && pass) {
-        document.getElementById("loginSection").style.display = "none";
-        document.getElementById("tipsSection").style.display = "block";
-        loadTips();
-    } else {
-        alert("Fyll i användarnamn och lösenord!");
-    }
+function register() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  if (!username || !password) {
+    alert("Fyll i allt!");
+    return;
+  }
+
+  if (localStorage.getItem("user_" + username)) {
+    alert("Användaren finns redan!");
+    return;
+  }
+
+  const user = { username, password };
+  localStorage.setItem("user_" + username, JSON.stringify(user));
+  localStorage.setItem("tips_" + username, JSON.stringify([]));
+
+  alert("Konto skapat!");
+}
+
+function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  const storedUser = localStorage.getItem("user_" + username);
+
+  if (!storedUser) {
+    alert("Användaren finns inte!");
+    return;
+  }
+
+  const user = JSON.parse(storedUser);
+
+  if (user.password === password) {
+    currentUser = username;
+
+    document.getElementById("authBox").style.display = "none";
+    document.getElementById("welcome").style.display = "block";
+    document.getElementById("welcomeText").innerText =
+      "Välkommen, " + username + "!";
+
+    loadTips();
+  } else {
+    alert("Fel lösenord!");
+  }
 }
 
 function saveTip() {
-    const input = document.getElementById("tipInput");
-    const tip = input.value.trim();
-    if (!tip) return;
+  const tip = document.getElementById("tipInput").value;
+  if (!tip) return;
 
-    let tips = JSON.parse(localStorage.getItem("tips")) || [];
-    tips.push(tip);
-    localStorage.setItem("tips", JSON.stringify(tips));
+  let tips = JSON.parse(localStorage.getItem("tips_" + currentUser)) || [];
+  tips.push(tip);
+  localStorage.setItem("tips_" + currentUser, JSON.stringify(tips));
 
-    input.value = "";
-    loadTips();
+  document.getElementById("tipInput").value = "";
+  loadTips();
 }
 
 function loadTips() {
-    const tipsList = document.getElementById("tipsList");
-    tipsList.innerHTML = "";
+  const tipsList = document.getElementById("tipsList");
+  tipsList.innerHTML = "";
 
-    let tips = JSON.parse(localStorage.getItem("tips")) || [];
+  let tips = JSON.parse(localStorage.getItem("tips_" + currentUser)) || [];
 
-    tips.forEach(tip => {
-        const li = document.createElement("li");
-        li.textContent = tip;
-        tipsList.appendChild(li);
-    });
+  tips.forEach(t => {
+    const li = document.createElement("li");
+    li.textContent = t;
+    tipsList.appendChild(li);
+  });
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById("authBox").style.display = "block";
+  document.getElementById("welcome").style.display = "none";
 }
 </script>
 
