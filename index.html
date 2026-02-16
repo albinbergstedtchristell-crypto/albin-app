@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tips App</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #1e1e2f, #2b2b45);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+}
+
+.container {
+    background: #2f2f4f;
+    padding: 30px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+input, textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: #6c5ce7;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #8577ff;
+}
+
+ul {
+    text-align: left;
+    padding-left: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- LOGIN -->
+    <div id="loginSection">
+        <h2>Logga in</h2>
+        <input type="text" id="username" placeholder="Användarnamn">
+        <input type="password" id="password" placeholder="Lösenord">
+        <button onclick="login()">Logga in</button>
+    </div>
+
+    <!-- TIPS -->
+    <div id="tipsSection" style="display:none;">
+        <h2>Snälla ge mig lite tips på vad jag ska göra för något</h2>
+        <textarea id="tipInput" placeholder="Skriv ditt tips här..."></textarea>
+        <button onclick="saveTip()">Skicka tips</button>
+
+        <h3>Sparade tips:</h3>
+        <ul id="tipsList"></ul>
+    </div>
+
+</div>
+
+<script>
+function login() {
+    const user = document.getElementById("username").value;
+    const pass = document.getElementById("password").value;
+
+    if (user && pass) {
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("tipsSection").style.display = "block";
+        loadTips();
+    } else {
+        alert("Fyll i användarnamn och lösenord!");
+    }
+}
+
+function saveTip() {
+    const input = document.getElementById("tipInput");
+    const tip = input.value.trim();
+    if (!tip) return;
+
+    let tips = JSON.parse(localStorage.getItem("tips")) || [];
+    tips.push(tip);
+    localStorage.setItem("tips", JSON.stringify(tips));
+
+    input.value = "";
+    loadTips();
+}
+
+function loadTips() {
+    const tipsList = document.getElementById("tipsList");
+    tipsList.innerHTML = "";
+
+    let tips = JSON.parse(localStorage.getItem("tips")) || [];
+
+    tips.forEach(tip => {
+        const li = document.createElement("li");
+        li.textContent = tip;
+        tipsList.appendChild(li);
+    });
+}
+</script>
+
+</body>
+</html>
