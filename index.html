@@ -3,25 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snake Game med Poäng</title>
+<title>Snake Game – Uppgraderad</title>
 <style>
 body {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background: #222;
+    background: #1a1a1a;
     color: white;
     font-family: Arial, sans-serif;
     flex-direction: column;
 }
-canvas {
-    background: #111;
-    border: 2px solid #fff;
-}
+
 #score {
     margin-bottom: 10px;
     font-size: 24px;
+}
+
+canvas {
+    background: #222;
+    border: 3px solid #fff;
+    border-radius: 15px;
 }
 </style>
 </head>
@@ -35,24 +38,52 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 const grid = 20;
-let speed = 6; // start-hastighet (frames per second)
+let speed = 6;
 let count = 0;
-
 let score = 0;
+
 let snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
 let apple = { x: 320, y: 320 };
 
+// Random funktion
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
 }
 
+// Gradient-färg på ormen
+function getSnakeColor(index, length) {
+    const r = 50 + Math.floor((index/length)*205);
+    const g = 200 - Math.floor((index/length)*150);
+    const b = 50 + Math.floor((index/length)*100);
+    return `rgb(${r},${g},${b})`;
+}
+
+// Rita grid
+function drawGrid() {
+    ctx.strokeStyle = "#333";
+    for (let x = 0; x <= canvas.width; x += grid) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+    }
+    for (let y = 0; y <= canvas.height; y += grid) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+    }
+}
+
+// Huvudloop
 function gameLoop() {
     requestAnimationFrame(gameLoop);
-
     if (++count < speed) return;
     count = 0;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawGrid();
 
     // Flytta ormen
     snake.x += snake.dx;
@@ -64,18 +95,21 @@ function gameLoop() {
     if (snake.y < 0) snake.y = canvas.height - grid;
     if (snake.y >= canvas.height) snake.y = 0;
 
-    // Spara positioner
     snake.cells.unshift({x: snake.x, y: snake.y});
     if (snake.cells.length > snake.maxCells) snake.cells.pop();
 
-    // Rita äpplet
+    // Rita äpplet (runt)
     ctx.fillStyle = "red";
-    ctx.fillRect(apple.x, apple.y, grid-1, grid-1);
+    ctx.beginPath();
+    ctx.arc(apple.x + grid/2, apple.y + grid/2, grid/2 - 2, 0, Math.PI*2);
+    ctx.fill();
 
     // Rita ormen
-    ctx.fillStyle = "lime";
     snake.cells.forEach((cell, index) => {
-        ctx.fillRect(cell.x, cell.y, grid-1, grid-1);
+        ctx.fillStyle = getSnakeColor(index, snake.cells.length);
+        ctx.beginPath();
+        ctx.arc(cell.x + grid/2, cell.y + grid/2, grid/2 - 2, 0, Math.PI*2);
+        ctx.fill();
 
         // Äpple-koll
         if (cell.x === apple.x && cell.y === apple.y) {
@@ -83,7 +117,6 @@ function gameLoop() {
             score++;
             document.getElementById("score").textContent = "Poäng: " + score;
 
-            // Öka hastigheten lite
             if (speed > 2) speed -= 0.1;
 
             apple.x = getRandomInt(0, canvas.width / grid) * grid;
@@ -118,6 +151,5 @@ document.addEventListener("keydown", function(e) {
 
 requestAnimationFrame(gameLoop);
 </script>
-
 </body>
 </html>
