@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snake Game – Uppgraderad</title>
+<title>Snake Game med ljud och vägg-död</title>
 <style>
 body {
     display: flex;
@@ -33,6 +33,10 @@ canvas {
 <div id="score">Poäng: 0</div>
 <canvas id="gameCanvas" width="400" height="400"></canvas>
 
+<!-- Ljud -->
+<audio id="eatSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+<audio id="deathSound" src="https://www.soundjay.com/button/beep-10.wav"></audio>
+
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -44,6 +48,10 @@ let score = 0;
 
 let snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
 let apple = { x: 320, y: 320 };
+
+// Ljud
+const eatSound = document.getElementById("eatSound");
+const deathSound = document.getElementById("deathSound");
 
 // Random funktion
 function getRandomInt(min, max) {
@@ -75,6 +83,19 @@ function drawGrid() {
     }
 }
 
+// Reset funktion
+function resetGame() {
+    snake.x = 160;
+    snake.y = 160;
+    snake.cells = [];
+    snake.maxCells = 4;
+    snake.dx = grid;
+    snake.dy = 0;
+    score = 0;
+    speed = 6;
+    document.getElementById("score").textContent = "Poäng: " + score;
+}
+
 // Huvudloop
 function gameLoop() {
     requestAnimationFrame(gameLoop);
@@ -82,23 +103,22 @@ function gameLoop() {
     count = 0;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     drawGrid();
 
     // Flytta ormen
     snake.x += snake.dx;
     snake.y += snake.dy;
 
-    // Wrap-around
-    if (snake.x < 0) snake.x = canvas.width - grid;
-    if (snake.x >= canvas.width) snake.x = 0;
-    if (snake.y < 0) snake.y = canvas.height - grid;
-    if (snake.y >= canvas.height) snake.y = 0;
+    // Kontrollera kollision med vägg
+    if (snake.x < 0 || snake.x >= canvas.width || snake.y < 0 || snake.y >= canvas.height) {
+        deathSound.play();
+        resetGame();
+    }
 
     snake.cells.unshift({x: snake.x, y: snake.y});
     if (snake.cells.length > snake.maxCells) snake.cells.pop();
 
-    // Rita äpplet (runt)
+    // Rita äpplet
     ctx.fillStyle = "red";
     ctx.beginPath();
     ctx.arc(apple.x + grid/2, apple.y + grid/2, grid/2 - 2, 0, Math.PI*2);
@@ -116,6 +136,7 @@ function gameLoop() {
             snake.maxCells++;
             score++;
             document.getElementById("score").textContent = "Poäng: " + score;
+            eatSound.play();
 
             if (speed > 2) speed -= 0.1;
 
@@ -126,16 +147,8 @@ function gameLoop() {
         // Koll mot sig själv
         for (let i = index + 1; i < snake.cells.length; i++) {
             if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
-                // Reset
-                snake.x = 160;
-                snake.y = 160;
-                snake.cells = [];
-                snake.maxCells = 4;
-                snake.dx = grid;
-                snake.dy = 0;
-                score = 0;
-                speed = 6;
-                document.getElementById("score").textContent = "Poäng: " + score;
+                deathSound.play();
+                resetGame();
             }
         }
     });
