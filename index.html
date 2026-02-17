@@ -3,262 +3,103 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snake Pro med Leaderboard och Namn</title>
+<title>Mini Skräckspel</title>
 <style>
 body {
     margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    height: 100vh;
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    background: black;
+    color: white;
     font-family: Arial, sans-serif;
-    flex-direction: row;
-    color: white;
-    padding: 20px;
-    gap: 20px;
+    overflow: hidden;
 }
-
-#playerNameSection {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background: rgba(0,0,0,0.7);
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.7);
+#gameArea {
+    position: relative;
+    width: 800px;
+    height: 500px;
+    margin: 50px auto;
+    background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&h=500') no-repeat center/cover;
+    border: 3px solid white;
 }
-
-#playerNameSection input {
-    padding: 8px 10px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: none;
-    margin-bottom: 10px;
+#player {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: yellow;
+    top: 230px;
+    left: 380px;
 }
-
-#playerNameSection button {
-    padding: 8px 12px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: none;
-    background: #6c5ce7;
-    color: white;
-    cursor: pointer;
+#monster {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    top: -100px; /* börjar utanför skärmen */
+    left: 350px;
+    display: none;
 }
-
-#playerNameSection button:hover {
-    background: #8577ff;
-}
-
-#score {
-    font-size: 24px;
-    margin-bottom: 10px;
-    background: rgba(0,0,0,0.3);
-    padding: 10px 20px;
-    border-radius: 15px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-}
-
-canvas {
-    background: #111;
-    border-radius: 20px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.8);
-}
-
-#leaderboard {
-    background: rgba(0,0,0,0.5);
-    padding: 15px 20px;
-    border-radius: 15px;
-    width: 200px;
-    height: 400px;
+#message {
+    position: absolute;
+    top: 200px;
+    width: 100%;
     text-align: center;
-    overflow-y: auto;
-    box-shadow: 0 0 10px rgba(0,0,0,0.7);
-}
-
-#leaderboard h3 {
-    margin-bottom: 10px;
-}
-
-#leaderboard ol {
-    padding-left: 20px;
-    margin: 0;
-    font-size: 16px;
+    font-size: 32px;
+    color: red;
+    display: none;
 }
 </style>
 </head>
 <body>
 
-<!-- Namnfält -->
-<div id="playerNameSection">
-    <h2>Skriv ditt namn</h2>
-    <input type="text" id="playerNameInput" placeholder="Ditt namn">
-    <button onclick="startGame()">Starta spelet</button>
+<div id="gameArea">
+    <div id="player"></div>
+    <img id="monster" src="https://i.imgur.com/3v8FqzJ.png" alt="monster">
+    <div id="message">Booo! Du blev skrämd!</div>
 </div>
 
-<div>
-  <div id="score">Poäng: 0</div>
-  <canvas id="gameCanvas" width="400" height="400"></canvas>
-</div>
-
-<div id="leaderboard">
-  <h3>Leaderboard</h3>
-  <ol id="leaderboardList"></ol>
-</div>
-
-<audio id="eatSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
-<audio id="deathSound" src="https://www.soundjay.com/button/beep-10.wav"></audio>
+<audio id="scareSound" src="https://www.soundjay.com/horror/horror-scream-01.mp3"></audio>
 
 <script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+const player = document.getElementById('player');
+const monster = document.getElementById('monster');
+const message = document.getElementById('message');
+const scareSound = document.getElementById('scareSound');
+const gameArea = document.getElementById('gameArea');
 
-const grid = 20;
-let speed = 6;
-let count = 0;
-let score = 0;
-let playerName = "";
+let px = 380; // player x
+let py = 230; // player y
+const speed = 10;
 
-let snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
-let apple = { x: 320, y: 320 };
-let appleBlink = true;
+// rörelse med piltangenter
+document.addEventListener('keydown', e => {
+    if(e.key === 'ArrowLeft') px -= speed;
+    if(e.key === 'ArrowRight') px += speed;
+    if(e.key === 'ArrowUp') py -= speed;
+    if(e.key === 'ArrowDown') py += speed;
 
-const eatSound = document.getElementById("eatSound");
-const deathSound = document.getElementById("deathSound");
+    // håll spelaren inom ramar
+    px = Math.max(0, Math.min(gameArea.clientWidth - 40, px));
+    py = Math.max(0, Math.min(gameArea.clientHeight - 40, py));
 
-// Random funktion
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min)) + min;
-}
+    player.style.left = px + 'px';
+    player.style.top = py + 'px';
 
-// Gradient-färg på ormen
-function getSnakeColor(index, length) {
-    const r = 50 + Math.floor((index/length)*205);
-    const g = 200 - Math.floor((index/length)*150);
-    const b = 50 + Math.floor((index/length)*100);
-    return `rgb(${r},${g},${b})`;
-}
-
-// Leaderboard
-function updateLeaderboard(newScore, name) {
-    let scores = JSON.parse(localStorage.getItem("snakeLeaderboard")) || [];
-    scores.push({score: newScore, name: name});
-    scores.sort((a,b) => b.score - a.score);
-    if (scores.length > 5) scores = scores.slice(0,5); // Top 5
-    localStorage.setItem("snakeLeaderboard", JSON.stringify(scores));
-    renderLeaderboard(scores);
-}
-
-function renderLeaderboard(scores) {
-    const list = document.getElementById("leaderboardList");
-    list.innerHTML = "";
-    scores.forEach(entry => {
-        const li = document.createElement("li");
-        li.textContent = `${entry.name}: ${entry.score}`;
-        list.appendChild(li);
-    });
-}
-
-// Visa leaderboard vid start
-renderLeaderboard(JSON.parse(localStorage.getItem("snakeLeaderboard")) || []);
-
-// Starta spelet
-function startGame() {
-    const input = document.getElementById("playerNameInput").value.trim();
-    if (!input) { alert("Skriv ditt namn!"); return; }
-    playerName = input;
-    document.getElementById("playerNameSection").style.display = "none";
-    requestAnimationFrame(gameLoop);
-}
-
-// Reset
-function resetGame() {
-    updateLeaderboard(score, playerName);
-    snake.x = 160;
-    snake.y = 160;
-    snake.cells = [];
-    snake.maxCells = 4;
-    snake.dx = grid;
-    snake.dy = 0;
-    score = 0;
-    speed = 6;
-    document.getElementById("score").textContent = "Poäng: " + score;
-    ctx.fillStyle = "rgba(255,0,0,0.5)";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-}
-
-// Huvudloop
-function gameLoop() {
-    requestAnimationFrame(gameLoop);
-    if (++count < speed) return;
-    count = 0;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    snake.x += snake.dx;
-    snake.y += snake.dy;
-
-    if (snake.x < 0 || snake.x >= canvas.width || snake.y < 0 || snake.y >= canvas.height) {
-        deathSound.play();
-        resetGame();
-        return;
-    }
-
-    snake.cells.unshift({x: snake.x, y: snake.y});
-    if (snake.cells.length > snake.maxCells) snake.cells.pop();
-
-    appleBlink = !appleBlink;
-    let gradient = ctx.createRadialGradient(apple.x + grid/2, apple.y + grid/2, 2, apple.x + grid/2, apple.y + grid/2, grid/2);
-    gradient.addColorStop(0, "yellow");
-    gradient.addColorStop(0.5, appleBlink ? "red" : "orange");
-    gradient.addColorStop(1, "darkred");
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(apple.x + grid/2, apple.y + grid/2, grid/2 - 2, 0, Math.PI*2);
-    ctx.fill();
-
-    snake.cells.forEach((cell, index) => {
-        let color = getSnakeColor(index, snake.cells.length);
-        ctx.fillStyle = color;
-        ctx.shadowColor = "#0f0";
-        ctx.shadowBlur = 5;
-        ctx.beginPath();
-        ctx.arc(cell.x + grid/2, cell.y + grid/2, grid/2 - 2, 0, Math.PI*2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-
-        if (cell.x === apple.x && cell.y === apple.y) {
-            snake.maxCells++;
-            score++;
-            document.getElementById("score").textContent = "Poäng: " + score;
-            eatSound.play();
-            ctx.fillStyle = "#fff";
-            ctx.font = "16px Arial";
-            ctx.fillText("+1", apple.x + 5, apple.y - 5);
-            if (speed > 2) speed -= 0.1;
-            apple.x = getRandomInt(0, canvas.width / grid) * grid;
-            apple.y = getRandomInt(0, canvas.height / grid) * grid;
-        }
-
-        for (let i = index + 1; i < snake.cells.length; i++) {
-            if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
-                deathSound.play();
-                resetGame();
-                return;
-            }
-        }
-    });
-}
-
-// Tangenter
-document.addEventListener("keydown", function(e) {
-    if (snake.dx === 0 && e.key === "ArrowLeft") { snake.dx = -grid; snake.dy = 0; }
-    if (snake.dx === 0 && e.key === "ArrowRight") { snake.dx = grid; snake.dy = 0; }
-    if (snake.dy === 0 && e.key === "ArrowUp") { snake.dx = 0; snake.dy = -grid; }
-    if (snake.dy === 0 && e.key === "ArrowDown") { snake.dx = 0; snake.dy = grid; }
+    checkScare();
 });
+
+// slumpmässig jump scare
+function checkScare(){
+    if(Math.random() < 0.01){ // ca 1% chans vid rörelse
+        monster.style.display = 'block';
+        monster.style.top = (Math.random()* (gameArea.clientHeight - 80)) + 'px';
+        monster.style.left = (Math.random()* (gameArea.clientWidth - 80)) + 'px';
+        scareSound.play();
+        message.style.display = 'block';
+        setTimeout(() => {
+            monster.style.display = 'none';
+            message.style.display = 'none';
+        }, 1500);
+    }
+}
 </script>
+
 </body>
 </html>
