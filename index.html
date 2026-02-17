@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Skräckäventyr</title>
+<title>Mini Horror Survival</title>
 <style>
 body {
     margin: 0;
     background: black;
-    color: white;
     font-family: Arial, sans-serif;
+    overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -21,21 +21,22 @@ body {
     border: 3px solid white;
     display: block;
 }
+
 #message {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 32px;
+    font-size: 36px;
     color: red;
-    display: none;
     text-align: center;
+    display: none;
 }
 </style>
 </head>
 <body>
 
-<canvas id="gameCanvas" width="600" height="600"></canvas>
+<canvas id="gameCanvas" width="640" height="480"></canvas>
 <div id="message">GAME OVER!</div>
 
 <audio id="scareSound" src="https://www.soundjay.com/horror/horror-scream-01.mp3"></audio>
@@ -46,21 +47,22 @@ const ctx = canvas.getContext('2d');
 const message = document.getElementById('message');
 const scareSound = document.getElementById('scareSound');
 
-const grid = 30; // storlek på rutor
-const cols = canvas.width / grid;
-const rows = canvas.height / grid;
+// Tile-storlek
+const tileSize = 32;
+const cols = canvas.width / tileSize;
+const rows = canvas.height / tileSize;
 
 // Spelare
-let player = {x:1, y:1, color:'yellow', hasKey:false};
+let player = {x:1, y:1, width:28, height:28, color:'yellow', hasKey:false};
 
 // Monster
-let monster = {x:10, y:10, color:'red', dirX:1, dirY:0};
+let monster = {x:cols-3, y:rows-3, width:28, height:28, color:'red', speed:0.05};
 
-// Föremål (nyckel)
-let key = {x:5, y:5, color:'gold', picked:false};
+// Nyckel
+let key = {x:cols-5, y:2, width:28, height:28, color:'gold', picked:false};
 
 // Dörr
-let door = {x:cols-2, y:rows-2, color:'green'};
+let door = {x:cols-2, y:rows-2, width:28, height:28, color:'green'};
 
 // Väggar (enkel labyrint)
 let walls = [];
@@ -73,12 +75,12 @@ for(let i=0;i<rows;i++){
     walls.push({x:cols-1, y:i});
 }
 // extra väggar
-walls.push({x:3,y:3},{x:3,y:4},{x:3,y:5},{x:6,y:6},{x:6,y:7},{x:6,y:8});
+walls.push({x:4,y:4},{x:4,y:5},{x:4,y:6},{x:7,y:7},{x:7,y:8},{x:7,y:9});
 
 // Tangenter
-let keys = {};
-document.addEventListener('keydown', e=>{ keys[e.key]=true; });
-document.addEventListener('keyup', e=>{ keys[e.key]=false; });
+let keysPressed = {};
+document.addEventListener('keydown', e=>{ keysPressed[e.key] = true; });
+document.addEventListener('keyup', e=>{ keysPressed[e.key] = false; });
 
 // Kollisionscheck
 function collides(x,y){
@@ -87,14 +89,9 @@ function collides(x,y){
 }
 
 // Game Loop
-let lastTime = 0;
-function gameLoop(time=0){
-    const delta = time - lastTime;
-    if(delta > 150){ // hastighet
-        lastTime = time;
-        update();
-        draw();
-    }
+function gameLoop(){
+    update();
+    draw();
     requestAnimationFrame(gameLoop);
 }
 
@@ -103,51 +100,41 @@ function update(){
     // Spelare
     let newX = player.x;
     let newY = player.y;
-    if(keys['ArrowLeft']) newX--;
-    if(keys['ArrowRight']) newX++;
-    if(keys['ArrowUp']) newY--;
-    if(keys['ArrowDown']) newY++;
+    if(keysPressed['ArrowLeft']) newX -= 0.2;
+    if(keysPressed['ArrowRight']) newX += 0.2;
+    if(keysPressed['ArrowUp']) newY -= 0.2;
+    if(keysPressed['ArrowDown']) newY += 0.2;
 
-    if(!collides(newX,newY)){
-        player.x = newX;
-        player.y = newY;
-    }
+    // Runda av för tilekollision
+    let tileX = Math.floor(newX+0.5);
+    let tileY = Math.floor(newY+0.5);
+    if(!collides(Math.floor(newX), Math.floor(player.y))) player.x = newX;
+    if(!collides(Math.floor(player.x), Math.floor(newY))) player.y = newY;
 
-    // Plocka upp nyckel
-    if(!key.picked && player.x===key.x && player.y===key.y){
+    // Plocka nyckel
+    if(!key.picked && Math.floor(player.x) === key.x && Math.floor(player.y) === key.y){
         key.picked = true;
         player.hasKey = true;
         alert("Du tog nyckeln!");
     }
 
     // Öppna dörr
-    if(player.hasKey && player.x===door.x && player.y===door.y){
+    if(player.hasKey && Math.floor(player.x) === door.x && Math.floor(player.y) === door.y){
         alert("Grattis! Du klarade spelet!");
         resetGame();
     }
 
-    // Monster rör sig
-    monster.x += monster.dirX;
-    monster.y += monster.dirY;
-
-    if(collides(monster.x,monster.y)){
-        monster.dirX *= -1;
-        monster.dirY *= -1;
-        monster.x += monster.dirX;
-        monster.y += monster.dirY;
-    }
-
-    // Monster jagar spelare
-    if(Math.random()<0.5){
-        if(player.x>monster.x) monster.x++;
-        if(player.x<monster.x) monster.x--;
-    } else {
-        if(player.y>monster.y) monster.y++;
-        if(player.y<monster.y) monster.y--;
+    // Monster AI – jagar spelaren
+    let dx = player.x - monster.x;
+    let dy = player.y - monster.y;
+    let dist = Math.sqrt(dx*dx + dy*dy);
+    if(dist>0){
+        monster.x += (dx/dist) * monster.speed;
+        monster.y += (dy/dist) * monster.speed;
     }
 
     // Kollision med monster
-    if(player.x===monster.x && player.y===monster.y){
+    if(Math.floor(player.x) === Math.floor(monster.x) && Math.floor(player.y) === Math.floor(monster.y)){
         gameOver();
     }
 }
@@ -159,26 +146,26 @@ function draw(){
     // Väggar
     for(let w of walls){
         ctx.fillStyle='gray';
-        ctx.fillRect(w.x*grid, w.y*grid, grid, grid);
+        ctx.fillRect(w.x*tileSize, w.y*tileSize, tileSize, tileSize);
     }
 
     // Dörr
-    ctx.fillStyle = door.color;
-    ctx.fillRect(door.x*grid, door.y*grid, grid, grid);
+    ctx.fillStyle=door.color;
+    ctx.fillRect(door.x*tileSize, door.y*tileSize, tileSize, tileSize);
 
     // Nyckel
     if(!key.picked){
-        ctx.fillStyle = key.color;
-        ctx.fillRect(key.x*grid, key.y*grid, grid, grid);
+        ctx.fillStyle=key.color;
+        ctx.fillRect(key.x*tileSize, key.y*tileSize, tileSize, tileSize);
     }
 
     // Monster
-    ctx.fillStyle = monster.color;
-    ctx.fillRect(monster.x*grid, monster.y*grid, grid, grid);
+    ctx.fillStyle=monster.color;
+    ctx.fillRect(monster.x*tileSize, monster.y*tileSize, monster.width, monster.height);
 
     // Spelare
-    ctx.fillStyle = player.color;
-    ctx.fillRect(player.x*grid, player.y*grid, grid, grid);
+    ctx.fillStyle=player.color;
+    ctx.fillRect(player.x*tileSize, player.y*tileSize, player.width, player.height);
 }
 
 // Game over
@@ -193,8 +180,8 @@ function gameOver(){
 
 // Reset
 function resetGame(){
-    player = {x:1, y:1, color:'yellow', hasKey:false};
-    monster = {x:10, y:10, color:'red', dirX:1, dirY:0};
+    player = {x:1, y:1, width:28, height:28, color:'yellow', hasKey:false};
+    monster = {x:cols-3, y:rows-3, width:28, height:28, color:'red', speed:0.05};
     key.picked = false;
 }
 
