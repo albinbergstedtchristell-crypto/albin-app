@@ -67,10 +67,10 @@ img {
 
 <div class="container">
 
-    <!-- REGISTER / LOGIN -->
+    <!-- LOGIN / REGISTER -->
     <div id="loginSection">
         <h2>Skapa konto / Logga in</h2>
-        <input type="email" id="email" placeholder="Email">
+        <input type="text" id="username" placeholder="Användarnamn">
         <input type="password" id="password" placeholder="Lösenord">
         <button onclick="register()">Skapa konto</button>
         <button onclick="login()">Logga in</button>
@@ -120,22 +120,32 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage();
 
-// ====== Register ======
+// ====== Register med username ======
 function register() {
-    const email = document.getElementById("email").value;
+    const username = document.getElementById("username").value.trim();
     const pass = document.getElementById("password").value;
-    if (!email || !pass) { alert("Fyll i email och lösenord"); return; }
+    if (!username || !pass) { alert("Fyll i användarnamn och lösenord"); return; }
+
+    const email = username + "@tipsapp.com"; // Dummy-email
 
     auth.createUserWithEmailAndPassword(email, pass)
-        .then(() => alert("Konto skapat! Du kan nu logga in."))
+        .then((userCredential) => {
+            // Spara användarnamn i Firestore
+            db.collection("users").doc(userCredential.user.uid).set({
+                username: username
+            });
+            alert("Konto skapat! Du kan nu logga in.");
+        })
         .catch(err => alert(err.message));
 }
 
-// ====== Login ======
+// ====== Login med username ======
 function login() {
-    const email = document.getElementById("email").value;
+    const username = document.getElementById("username").value.trim();
     const pass = document.getElementById("password").value;
-    if (!email || !pass) { alert("Fyll i email och lösenord"); return; }
+    if (!username || !pass) { alert("Fyll i användarnamn och lösenord"); return; }
+
+    const email = username + "@tipsapp.com"; // Dummy-email
 
     auth.signInWithEmailAndPassword(email, pass)
         .then(() => {
