@@ -3,22 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snake Game – Vägg och Ljud</title>
+<title>Snake Pro</title>
 <style>
 body {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background: #1a1a1a;
-    color: white;
+    background: #111;
     font-family: Arial, sans-serif;
     flex-direction: column;
+    margin: 0;
+    color: #fff;
 }
 
 #score {
-    margin-bottom: 10px;
     font-size: 24px;
+    margin-bottom: 10px;
 }
 
 canvas {
@@ -48,8 +49,8 @@ let score = 0;
 
 let snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
 let apple = { x: 320, y: 320 };
+let appleBlink = true;
 
-// Ljud
 const eatSound = document.getElementById("eatSound");
 const deathSound = document.getElementById("deathSound");
 
@@ -83,7 +84,7 @@ function drawGrid() {
     }
 }
 
-// Reset funktion
+// Reset
 function resetGame() {
     snake.x = 160;
     snake.y = 160;
@@ -94,6 +95,11 @@ function resetGame() {
     score = 0;
     speed = 6;
     document.getElementById("score").textContent = "Poäng: " + score;
+
+    // Döds-animation: blinkar rött
+    ctx.fillStyle = "red";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    setTimeout(() => {}, 200);
 }
 
 // Huvudloop
@@ -109,23 +115,24 @@ function gameLoop() {
     snake.x += snake.dx;
     snake.y += snake.dy;
 
-    // Kontrollera kollision med vägg
+    // Väggkollision
     if (snake.x < 0 || snake.x >= canvas.width || snake.y < 0 || snake.y >= canvas.height) {
         deathSound.play();
         resetGame();
-        return; // stoppa resten av loopen
+        return;
     }
 
     snake.cells.unshift({x: snake.x, y: snake.y});
     if (snake.cells.length > snake.maxCells) snake.cells.pop();
 
-    // Rita äpplet
-    ctx.fillStyle = "red";
+    // Blinkande äpple
+    appleBlink = !appleBlink;
+    ctx.fillStyle = appleBlink ? "red" : "orange";
     ctx.beginPath();
     ctx.arc(apple.x + grid/2, apple.y + grid/2, grid/2 - 2, 0, Math.PI*2);
     ctx.fill();
 
-    // Rita ormen och kolla kollisions
+    // Rita ormen och kolla kollisioner
     snake.cells.forEach((cell, index) => {
         ctx.fillStyle = getSnakeColor(index, snake.cells.length);
         ctx.beginPath();
@@ -138,6 +145,11 @@ function gameLoop() {
             score++;
             document.getElementById("score").textContent = "Poäng: " + score;
             eatSound.play();
+
+            // Poäng-animation: liten popup-text
+            ctx.fillStyle = "#fff";
+            ctx.font = "16px Arial";
+            ctx.fillText("+1", apple.x + 5, apple.y - 5);
 
             if (speed > 2) speed -= 0.1;
 
