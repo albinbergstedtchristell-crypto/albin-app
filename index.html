@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snake Game med ljud och vägg-död</title>
+<title>Snake Game – Vägg och Ljud</title>
 <style>
 body {
     display: flex;
@@ -113,6 +113,7 @@ function gameLoop() {
     if (snake.x < 0 || snake.x >= canvas.width || snake.y < 0 || snake.y >= canvas.height) {
         deathSound.play();
         resetGame();
+        return; // stoppa resten av loopen
     }
 
     snake.cells.unshift({x: snake.x, y: snake.y});
@@ -124,7 +125,7 @@ function gameLoop() {
     ctx.arc(apple.x + grid/2, apple.y + grid/2, grid/2 - 2, 0, Math.PI*2);
     ctx.fill();
 
-    // Rita ormen
+    // Rita ormen och kolla kollisions
     snake.cells.forEach((cell, index) => {
         ctx.fillStyle = getSnakeColor(index, snake.cells.length);
         ctx.beginPath();
@@ -149,6 +150,7 @@ function gameLoop() {
             if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
                 deathSound.play();
                 resetGame();
+                return;
             }
         }
     });
