@@ -3,29 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snake Pro</title>
+<title>Snake – Snygg version</title>
 <style>
 body {
+    margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background: #111;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
     font-family: Arial, sans-serif;
     flex-direction: column;
-    margin: 0;
-    color: #fff;
+    color: white;
 }
 
 #score {
     font-size: 24px;
     margin-bottom: 10px;
+    background: rgba(0,0,0,0.3);
+    padding: 10px 20px;
+    border-radius: 15px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
 }
 
 canvas {
-    background: #222;
-    border: 3px solid #fff;
-    border-radius: 15px;
+    background: #111;
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.8);
 }
 </style>
 </head>
@@ -34,7 +38,6 @@ canvas {
 <div id="score">Poäng: 0</div>
 <canvas id="gameCanvas" width="400" height="400"></canvas>
 
-<!-- Ljud -->
 <audio id="eatSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
 <audio id="deathSound" src="https://www.soundjay.com/button/beep-10.wav"></audio>
 
@@ -67,23 +70,6 @@ function getSnakeColor(index, length) {
     return `rgb(${r},${g},${b})`;
 }
 
-// Rita grid
-function drawGrid() {
-    ctx.strokeStyle = "#333";
-    for (let x = 0; x <= canvas.width; x += grid) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
-    }
-    for (let y = 0; y <= canvas.height; y += grid) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
-    }
-}
-
 // Reset
 function resetGame() {
     snake.x = 160;
@@ -97,9 +83,8 @@ function resetGame() {
     document.getElementById("score").textContent = "Poäng: " + score;
 
     // Döds-animation: blinkar rött
-    ctx.fillStyle = "red";
+    ctx.fillStyle = "rgba(255,0,0,0.5)";
     ctx.fillRect(0,0,canvas.width,canvas.height);
-    setTimeout(() => {}, 200);
 }
 
 // Huvudloop
@@ -109,7 +94,6 @@ function gameLoop() {
     count = 0;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawGrid();
 
     // Flytta ormen
     snake.x += snake.dx;
@@ -125,19 +109,27 @@ function gameLoop() {
     snake.cells.unshift({x: snake.x, y: snake.y});
     if (snake.cells.length > snake.maxCells) snake.cells.pop();
 
-    // Blinkande äpple
+    // Blinkande äpple med glöd
     appleBlink = !appleBlink;
-    ctx.fillStyle = appleBlink ? "red" : "orange";
+    let gradient = ctx.createRadialGradient(apple.x + grid/2, apple.y + grid/2, 2, apple.x + grid/2, apple.y + grid/2, grid/2);
+    gradient.addColorStop(0, "yellow");
+    gradient.addColorStop(0.5, appleBlink ? "red" : "orange");
+    gradient.addColorStop(1, "darkred");
+    ctx.fillStyle = gradient;
     ctx.beginPath();
     ctx.arc(apple.x + grid/2, apple.y + grid/2, grid/2 - 2, 0, Math.PI*2);
     ctx.fill();
 
-    // Rita ormen och kolla kollisioner
+    // Rita ormen
     snake.cells.forEach((cell, index) => {
-        ctx.fillStyle = getSnakeColor(index, snake.cells.length);
+        let color = getSnakeColor(index, snake.cells.length);
+        ctx.fillStyle = color;
+        ctx.shadowColor = "#0f0";
+        ctx.shadowBlur = 5;
         ctx.beginPath();
         ctx.arc(cell.x + grid/2, cell.y + grid/2, grid/2 - 2, 0, Math.PI*2);
         ctx.fill();
+        ctx.shadowBlur = 0;
 
         // Äpple-koll
         if (cell.x === apple.x && cell.y === apple.y) {
@@ -146,7 +138,7 @@ function gameLoop() {
             document.getElementById("score").textContent = "Poäng: " + score;
             eatSound.play();
 
-            // Poäng-animation: liten popup-text
+            // Poäng-animation
             ctx.fillStyle = "#fff";
             ctx.font = "16px Arial";
             ctx.fillText("+1", apple.x + 5, apple.y - 5);
