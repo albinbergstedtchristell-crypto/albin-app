@@ -3,100 +3,112 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snygg Chatt-app</title>
+<title>Snygg Chatt</title>
 <style>
 * { box-sizing: border-box; margin:0; padding:0; }
 body {
     font-family: 'Segoe UI', sans-serif;
-    background: #1e1e2f;
+    background: #f0f0f0;
     display:flex;
     justify-content:center;
     align-items:center;
     height:100vh;
-    color: #fff;
 }
 
 .chat-container {
     width: 400px;
     max-width: 95%;
-    background: #2b2b45;
-    border-radius: 15px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    height: 600px;
+    display:flex;
+    flex-direction:column;
+    border-radius: 20px;
+    overflow:hidden;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    background: white;
 }
 
 .chat-header {
     padding: 15px;
-    background: #3a3a5a;
     font-weight: bold;
-    text-align: center;
+    text-align:center;
+    background: #007aff;
+    color: white;
     font-size: 1.2em;
 }
 
 .chat-messages {
     flex:1;
     padding: 10px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    background: #262646;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    overflow-y:auto;
+    background: #e5e5ea;
 }
 
 .message {
-    max-width: 75%;
+    max-width: 70%;
     padding: 10px 15px;
-    border-radius: 15px;
+    border-radius: 20px;
     word-wrap: break-word;
+    font-size: 15px;
+    line-height:1.4;
+    opacity:0;
+    transform: translateY(20px);
+    animation: fadeIn 0.3s forwards;
 }
 
 .user-message {
-    background: #6c5ce7;
+    background: #007aff;
+    color: white;
     align-self: flex-end;
+    border-bottom-right-radius: 0;
 }
 
 .bot-message {
-    background: #4b4b7b;
+    background: #e5e5ea;
+    color: black;
     align-self: flex-start;
+    border-bottom-left-radius: 0;
 }
 
 .chat-input {
     display:flex;
-    border-top:1px solid #444;
+    border-top:1px solid #ccc;
 }
 
 .chat-input input {
     flex:1;
     padding: 12px;
     border:none;
-    font-size: 16px;
-    border-radius:0;
     outline:none;
-    background:#1e1e2f;
-    color:white;
+    font-size:16px;
+    border-radius:0;
 }
 
 .chat-input button {
-    background:#6c5ce7;
-    border:none;
-    color:white;
     padding: 12px 20px;
+    border:none;
+    background:#007aff;
+    color:white;
     cursor:pointer;
-    font-size: 16px;
-    transition: 0.2s;
+    font-size:16px;
+    transition:0.2s;
 }
 
 .chat-input button:hover {
-    background:#8577ff;
+    background:#005bb5;
+}
+
+@keyframes fadeIn {
+    to { opacity:1; transform: translateY(0); }
 }
 </style>
 </head>
 <body>
 
 <div class="chat-container">
-    <div class="chat-header">Snygg Chatt</div>
+    <div class="chat-header">Snap-Style Chatt</div>
     <div class="chat-messages" id="chatMessages"></div>
     <div class="chat-input">
         <input type="text" id="chatInput" placeholder="Skriv ett meddelande...">
@@ -108,6 +120,7 @@ body {
 const chatMessages = document.getElementById("chatMessages");
 const chatInput = document.getElementById("chatInput");
 
+// Hämta meddelanden från localStorage
 let messages = JSON.parse(localStorage.getItem("messages")) || [];
 
 function displayMessages() {
@@ -122,27 +135,27 @@ function displayMessages() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
+// Skicka meddelande
 function sendMessage() {
     const text = chatInput.value.trim();
     if(!text) return;
-    
-    // Lägg till användarens meddelande
+
+    // Användarens meddelande
     messages.push({text:text, user:true});
     chatInput.value = "";
-    displayMessages();
-    
-    // Spara i localStorage
     localStorage.setItem("messages", JSON.stringify(messages));
+    displayMessages();
 
-    // Enkel bot-svar efter liten delay
+    // Enkel bot-svar (exempel)
     setTimeout(()=>{
-        const botResponse = "Bot säger: " + text.split("").reverse().join("");
+        const botResponse = "Bot: " + text.split("").reverse().join("");
         messages.push({text:botResponse, user:false});
         localStorage.setItem("messages", JSON.stringify(messages));
         displayMessages();
     }, 500);
 }
 
+// Skicka med Enter
 chatInput.addEventListener("keydown", e => {
     if(e.key === "Enter") sendMessage();
 });
