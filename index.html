@@ -9,12 +9,14 @@ body {
     margin: 0;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: flex-start; /* leaderboarden startar högst upp */
+    height: 100vh;
     background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
     font-family: Arial, sans-serif;
-    flex-direction: column;
+    flex-direction: row; /* canvas + leaderboard bredvid varandra */
     color: white;
     padding: 20px;
+    gap: 20px; /* mellanrum mellan spel och leaderboard */
 }
 
 #score {
@@ -33,29 +35,33 @@ canvas {
 }
 
 #leaderboard {
-    margin-top: 20px;
-    background: rgba(0,0,0,0.3);
-    padding: 15px;
+    background: rgba(0,0,0,0.5);
+    padding: 15px 20px;
     border-radius: 15px;
-    width: 200px;
-    text-align: left;
+    width: 150px;
+    height: 400px;  /* samma höjd som canvas */
+    text-align: center;
+    overflow-y: auto;
+    box-shadow: 0 0 10px rgba(0,0,0,0.7);
 }
 
 #leaderboard h3 {
-    margin: 0 0 10px 0;
-    text-align: center;
+    margin-bottom: 10px;
 }
 
 #leaderboard ol {
     padding-left: 20px;
     margin: 0;
+    font-size: 18px;
 }
 </style>
 </head>
 <body>
 
-<div id="score">Poäng: 0</div>
-<canvas id="gameCanvas" width="400" height="400"></canvas>
+<div>
+  <div id="score">Poäng: 0</div>
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+</div>
 
 <div id="leaderboard">
   <h3>Leaderboard</h3>
