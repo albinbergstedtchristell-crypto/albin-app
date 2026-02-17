@@ -19,6 +19,39 @@ body {
     gap: 20px;
 }
 
+#playerNameSection {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0,0,0,0.7);
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.7);
+}
+
+#playerNameSection input {
+    padding: 8px 10px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    margin-bottom: 10px;
+}
+
+#playerNameSection button {
+    padding: 8px 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    background: #6c5ce7;
+    color: white;
+    cursor: pointer;
+}
+
+#playerNameSection button:hover {
+    background: #8577ff;
+}
+
 #score {
     font-size: 24px;
     margin-bottom: 10px;
@@ -54,46 +87,15 @@ canvas {
     margin: 0;
     font-size: 16px;
 }
-
-#playerNameSection {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    background: rgba(0,0,0,0.6);
-    padding: 15px 20px;
-    border-radius: 15px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.7);
-}
-
-#playerNameSection input {
-    padding: 5px 10px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: none;
-    margin-right: 5px;
-}
-
-#playerNameSection button {
-    padding: 5px 10px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: none;
-    background: #6c5ce7;
-    color: white;
-    cursor: pointer;
-}
-
-#playerNameSection button:hover {
-    background: #8577ff;
-}
 </style>
 </head>
 <body>
 
-<!-- Player name input -->
+<!-- Namnfält -->
 <div id="playerNameSection">
+    <h2>Skriv ditt namn</h2>
     <input type="text" id="playerNameInput" placeholder="Ditt namn">
-    <button onclick="startGame()">Starta</button>
+    <button onclick="startGame()">Starta spelet</button>
 </div>
 
 <div>
@@ -173,7 +175,7 @@ function startGame() {
 
 // Reset
 function resetGame() {
-    updateLeaderboard(score, playerName); // Spara poäng med namn
+    updateLeaderboard(score, playerName);
     snake.x = 160;
     snake.y = 160;
     snake.cells = [];
@@ -183,13 +185,8 @@ function resetGame() {
     score = 0;
     speed = 6;
     document.getElementById("score").textContent = "Poäng: " + score;
-
-    // Döds-animation
     ctx.fillStyle = "rgba(255,0,0,0.5)";
     ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    // Efter reset, vänta lite och starta spelet igen automatiskt
-    setTimeout(() => {}, 200);
 }
 
 // Huvudloop
@@ -200,11 +197,9 @@ function gameLoop() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Flytta ormen
     snake.x += snake.dx;
     snake.y += snake.dy;
 
-    // Väggkollision
     if (snake.x < 0 || snake.x >= canvas.width || snake.y < 0 || snake.y >= canvas.height) {
         deathSound.play();
         resetGame();
@@ -214,7 +209,6 @@ function gameLoop() {
     snake.cells.unshift({x: snake.x, y: snake.y});
     if (snake.cells.length > snake.maxCells) snake.cells.pop();
 
-    // Blinkande äpple
     appleBlink = !appleBlink;
     let gradient = ctx.createRadialGradient(apple.x + grid/2, apple.y + grid/2, 2, apple.x + grid/2, apple.y + grid/2, grid/2);
     gradient.addColorStop(0, "yellow");
@@ -225,7 +219,6 @@ function gameLoop() {
     ctx.arc(apple.x + grid/2, apple.y + grid/2, grid/2 - 2, 0, Math.PI*2);
     ctx.fill();
 
-    // Rita ormen och kolla kollisioner
     snake.cells.forEach((cell, index) => {
         let color = getSnakeColor(index, snake.cells.length);
         ctx.fillStyle = color;
@@ -236,25 +229,19 @@ function gameLoop() {
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        // Äpple-koll
         if (cell.x === apple.x && cell.y === apple.y) {
             snake.maxCells++;
             score++;
             document.getElementById("score").textContent = "Poäng: " + score;
             eatSound.play();
-
-            // Poäng-animation
             ctx.fillStyle = "#fff";
             ctx.font = "16px Arial";
             ctx.fillText("+1", apple.x + 5, apple.y - 5);
-
             if (speed > 2) speed -= 0.1;
-
             apple.x = getRandomInt(0, canvas.width / grid) * grid;
             apple.y = getRandomInt(0, canvas.height / grid) * grid;
         }
 
-        // Koll mot sig själv
         for (let i = index + 1; i < snake.cells.length; i++) {
             if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
                 deathSound.play();
