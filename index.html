@@ -3,169 +3,143 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tips System</title>
+<title>Klassens Avslutning 🎉</title>
 
 <style>
 body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: linear-gradient(135deg, #1e1e2f, #2b2b45);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  color: white;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #1e1e2f, #2b2b45);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
 }
 
 .container {
-  background: #2f2f4f;
-  padding: 30px;
-  border-radius: 15px;
-  width: 350px;
-  text-align: center;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    background: #2f2f4f;
+    padding: 30px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
-input, textarea {
-  width: 100%;
-  padding: 10px;
-  margin: 8px 0;
-  border: none;
-  border-radius: 8px;
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
 }
 
 button {
-  width: 100%;
-  padding: 10px;
-  margin-top: 8px;
-  border: none;
-  border-radius: 8px;
-  background: #4c6ef5;
-  color: white;
-  cursor: pointer;
-  font-weight: bold;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: #6c5ce7;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s ease;
+    margin-top: 10px;
 }
 
 button:hover {
-  background: #364fc7;
+    background: #8577ff;
 }
 
-#welcome {
-  display: none;
+button:active {
+    transform: scale(0.95);
 }
 
-ul {
-  text-align: left;
-  padding-left: 20px;
+#welcomeText {
+    font-size: 22px;
+    color: #ffeaa7;
+    margin-bottom: 20px;
+}
+
+#challengeBox {
+    margin-top: 20px;
+    padding: 15px;
+    background: #3b3b6b;
+    border-radius: 10px;
+    min-height: 50px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 </style>
 </head>
+
 <body>
 
-<!-- LOGIN / REGISTER -->
-<div class="container" id="authBox">
-  <h2>Logga in / Skapa konto</h2>
-  <input id="username" type="text" placeholder="Användarnamn">
-  <input id="password" type="password" placeholder="Lösenord">
-  <button onclick="login()">Logga in</button>
-  <button onclick="register()">Skapa konto</button>
-</div>
+<div class="container">
 
-<!-- AFTER LOGIN -->
-<div class="container" id="welcome">
-  <h2 id="welcomeText"></h2>
+    <!-- LOGIN -->
+    <div id="loginSection">
+        <h2>Logga in 🎓</h2>
+        <input type="text" id="username" placeholder="Användarnamn">
+        <input type="password" id="password" placeholder="Lösenord">
+        <button id="loginBtn">Logga in</button>
+    </div>
 
-  <h3>Snälla ge mig lite tips på vad jag ska göra för något</h3>
-  <textarea id="tipInput" placeholder="Skriv ditt tips..."></textarea>
-  <button onclick="saveTip()">Skicka</button>
+    <!-- AVSLUTNINGSSIDA -->
+    <div id="mainSection" style="display:none;">
+        <h2 id="welcomeText"></h2>
 
-  <h4>Dina tips:</h4>
-  <ul id="tipsList"></ul>
+        <h3>🎲 Slumpa en klass-utmaning</h3>
+        <button id="randomBtn">Slumpa!</button>
 
-  <button onclick="logout()">Logga ut</button>
+        <div id="challengeBox">
+            Tryck på knappen för att börja 😎
+        </div>
+    </div>
+
 </div>
 
 <script>
-let currentUser = null;
 
-function register() {
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
+const challenges = [
+    "Hela klassen ska göra 10 armhävningar!",
+    "Alla ska byta plats med någon!",
+    "Sjunga en låt tillsammans 🎤",
+    "Ta en gruppbild NU 📸",
+    "Ge en komplimang till personen bredvid dig!",
+    "Läraren ska berätta en pinsam historia 😆",
+    "Alla ska applådera i 10 sekunder 👏",
+    "Gör en våg genom klassrummet 🌊",
+    "Skrik 'VI KLARADE DET!' tillsammans 🎉"
+];
 
-  if (!username || !password) {
-    alert("Fyll i allt!");
-    return;
-  }
-
-  if (localStorage.getItem("user_" + username)) {
-    alert("Användaren finns redan!");
-    return;
-  }
-
-  const user = { username, password };
-  localStorage.setItem("user_" + username, JSON.stringify(user));
-  localStorage.setItem("tips_" + username, JSON.stringify([]));
-
-  alert("Konto skapat!");
-}
+document.getElementById("loginBtn").addEventListener("click", login);
+document.getElementById("randomBtn").addEventListener("click", randomChallenge);
 
 function login() {
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
+    const user = document.getElementById("username").value;
+    const pass = document.getElementById("password").value;
 
-  const storedUser = localStorage.getItem("user_" + username);
-
-  if (!storedUser) {
-    alert("Användaren finns inte!");
-    return;
-  }
-
-  const user = JSON.parse(storedUser);
-
-  if (user.password === password) {
-    currentUser = username;
-
-    document.getElementById("authBox").style.display = "none";
-    document.getElementById("welcome").style.display = "block";
-    document.getElementById("welcomeText").innerText =
-      "Välkommen, " + username + "!";
-
-    loadTips();
-  } else {
-    alert("Fel lösenord!");
-  }
+    if (user && pass) {
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("mainSection").style.display = "block";
+        document.getElementById("welcomeText").textContent =
+            "Välkommen " + user + "! 🎉 Nu kör vi!";
+    } else {
+        alert("Fyll i användarnamn och lösenord!");
+    }
 }
 
-function saveTip() {
-  const tip = document.getElementById("tipInput").value;
-  if (!tip) return;
+function randomChallenge() {
+    const random =
+        challenges[Math.floor(Math.random() * challenges.length)];
 
-  let tips = JSON.parse(localStorage.getItem("tips_" + currentUser)) || [];
-  tips.push(tip);
-  localStorage.setItem("tips_" + currentUser, JSON.stringify(tips));
-
-  document.getElementById("tipInput").value = "";
-  loadTips();
+    document.getElementById("challengeBox").textContent = random;
 }
 
-function loadTips() {
-  const tipsList = document.getElementById("tipsList");
-  tipsList.innerHTML = "";
-
-  let tips = JSON.parse(localStorage.getItem("tips_" + currentUser)) || [];
-
-  tips.forEach(t => {
-    const li = document.createElement("li");
-    li.textContent = t;
-    tipsList.appendChild(li);
-  });
-}
-
-function logout() {
-  currentUser = null;
-  document.getElementById("authBox").style.display = "block";
-  document.getElementById("welcome").style.display = "none";
-}
 </script>
 
 </body>
