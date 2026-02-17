@@ -3,34 +3,31 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mini Horror Survival</title>
+<title>Horror Adventure</title>
 <style>
 body {
-    margin: 0;
-    background: black;
-    font-family: Arial, sans-serif;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    margin:0;
+    background:black;
+    overflow:hidden;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
 }
-
 #gameCanvas {
-    background: #111;
-    border: 3px solid white;
-    display: block;
+    border:3px solid white;
+    background:#000;
 }
-
 #message {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 36px;
-    color: red;
-    text-align: center;
-    display: none;
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    color:red;
+    font-size:36px;
+    display:none;
+    text-align:center;
+    text-shadow:2px 2px 5px black;
 }
 </style>
 </head>
@@ -47,34 +44,41 @@ const ctx = canvas.getContext('2d');
 const message = document.getElementById('message');
 const scareSound = document.getElementById('scareSound');
 
-// Tile-storlek
 const tileSize = 32;
-const cols = canvas.width / tileSize;
-const rows = canvas.height / tileSize;
+const cols = canvas.width/tileSize;
+const rows = canvas.height/tileSize;
+
+// Ladda sprites
+const playerSprite = new Image();
+playerSprite.src = "https://i.imgur.com/M0VqJ4s.png"; // exempel spelare
+const monsterSprite = new Image();
+monsterSprite.src = "https://i.imgur.com/3v8FqzJ.png"; // monster
+const floorSprite = new Image();
+floorSprite.src = "https://i.imgur.com/z8R2xHt.png"; // golv
+const wallSprite = new Image();
+wallSprite.src = "https://i.imgur.com/WlNJkX3.png"; // vägg
+const keySprite = new Image();
+keySprite.src = "https://i.imgur.com/LF7sx1b.png"; // nyckel
+const doorSprite = new Image();
+doorSprite.src = "https://i.imgur.com/8k4zRkp.png"; // dörr
 
 // Spelare
-let player = {x:1, y:1, width:28, height:28, color:'yellow', hasKey:false};
-
+let player = {x:1, y:1, width:28, height:28, hasKey:false};
 // Monster
-let monster = {x:cols-3, y:rows-3, width:28, height:28, color:'red', speed:0.05};
-
+let monster = {x:cols-3, y:rows-3, width:28, height:28, speed:0.05};
 // Nyckel
-let key = {x:cols-5, y:2, width:28, height:28, color:'gold', picked:false};
-
+let key = {x:cols-5, y:2, picked:false};
 // Dörr
-let door = {x:cols-2, y:rows-2, width:28, height:28, color:'green'};
+let door = {x:cols-2, y:rows-2};
 
-// Väggar (enkel labyrint)
+// Väggar
 let walls = [];
 for(let i=0;i<cols;i++){
-    walls.push({x:i, y:0});
-    walls.push({x:i, y:rows-1});
+    walls.push({x:i,y:0}); walls.push({x:i,y:rows-1});
 }
 for(let i=0;i<rows;i++){
-    walls.push({x:0, y:i});
-    walls.push({x:cols-1, y:i});
+    walls.push({x:0,y:i}); walls.push({x:cols-1,y:i});
 }
-// extra väggar
 walls.push({x:4,y:4},{x:4,y:5},{x:4,y:6},{x:7,y:7},{x:7,y:8},{x:7,y:9});
 
 // Tangenter
@@ -88,53 +92,45 @@ function collides(x,y){
     return false;
 }
 
-// Game Loop
+// Game loop
 function gameLoop(){
     update();
     draw();
     requestAnimationFrame(gameLoop);
 }
 
-// Uppdatering
 function update(){
-    // Spelare
+    // Rörelse
     let newX = player.x;
     let newY = player.y;
-    if(keysPressed['ArrowLeft']) newX -= 0.2;
-    if(keysPressed['ArrowRight']) newX += 0.2;
-    if(keysPressed['ArrowUp']) newY -= 0.2;
-    if(keysPressed['ArrowDown']) newY += 0.2;
+    if(keysPressed['ArrowLeft']) newX-=0.2;
+    if(keysPressed['ArrowRight']) newX+=0.2;
+    if(keysPressed['ArrowUp']) newY-=0.2;
+    if(keysPressed['ArrowDown']) newY+=0.2;
 
-    // Runda av för tilekollision
-    let tileX = Math.floor(newX+0.5);
-    let tileY = Math.floor(newY+0.5);
     if(!collides(Math.floor(newX), Math.floor(player.y))) player.x = newX;
     if(!collides(Math.floor(player.x), Math.floor(newY))) player.y = newY;
 
     // Plocka nyckel
-    if(!key.picked && Math.floor(player.x) === key.x && Math.floor(player.y) === key.y){
-        key.picked = true;
-        player.hasKey = true;
+    if(!key.picked && Math.floor(player.x)===key.x && Math.floor(player.y)===key.y){
+        key.picked = true; player.hasKey = true;
         alert("Du tog nyckeln!");
     }
 
-    // Öppna dörr
-    if(player.hasKey && Math.floor(player.x) === door.x && Math.floor(player.y) === door.y){
+    // Dörr
+    if(player.hasKey && Math.floor(player.x)===door.x && Math.floor(player.y)===door.y){
         alert("Grattis! Du klarade spelet!");
         resetGame();
     }
 
-    // Monster AI – jagar spelaren
-    let dx = player.x - monster.x;
-    let dy = player.y - monster.y;
-    let dist = Math.sqrt(dx*dx + dy*dy);
-    if(dist>0){
-        monster.x += (dx/dist) * monster.speed;
-        monster.y += (dy/dist) * monster.speed;
-    }
+    // Monster jagar spelare
+    let dx = player.x-monster.x;
+    let dy = player.y-monster.y;
+    let dist = Math.sqrt(dx*dx+dy*dy);
+    if(dist>0){ monster.x += (dx/dist)*monster.speed; monster.y += (dy/dist)*monster.speed; }
 
-    // Kollision med monster
-    if(Math.floor(player.x) === Math.floor(monster.x) && Math.floor(player.y) === Math.floor(monster.y)){
+    // Kollision monster
+    if(Math.floor(player.x)===Math.floor(monster.x) && Math.floor(player.y)===Math.floor(monster.y)){
         gameOver();
     }
 }
@@ -143,45 +139,45 @@ function update(){
 function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
+    // Golv
+    for(let y=0;y<rows;y++){
+        for(let x=0;x<cols;x++){
+            ctx.drawImage(floorSprite, x*tileSize, y*tileSize, tileSize, tileSize);
+        }
+    }
+
     // Väggar
     for(let w of walls){
-        ctx.fillStyle='gray';
-        ctx.fillRect(w.x*tileSize, w.y*tileSize, tileSize, tileSize);
+        ctx.drawImage(wallSprite, w.x*tileSize, w.y*tileSize, tileSize, tileSize);
     }
 
     // Dörr
-    ctx.fillStyle=door.color;
-    ctx.fillRect(door.x*tileSize, door.y*tileSize, tileSize, tileSize);
+    ctx.drawImage(doorSprite, door.x*tileSize, door.y*tileSize, tileSize, tileSize);
 
     // Nyckel
-    if(!key.picked){
-        ctx.fillStyle=key.color;
-        ctx.fillRect(key.x*tileSize, key.y*tileSize, tileSize, tileSize);
-    }
+    if(!key.picked) ctx.drawImage(keySprite, key.x*tileSize, key.y*tileSize, tileSize, tileSize);
 
     // Monster
-    ctx.fillStyle=monster.color;
-    ctx.fillRect(monster.x*tileSize, monster.y*tileSize, monster.width, monster.height);
+    ctx.drawImage(monsterSprite, monster.x*tileSize, monster.y*tileSize, monster.width, monster.height);
 
     // Spelare
-    ctx.fillStyle=player.color;
-    ctx.fillRect(player.x*tileSize, player.y*tileSize, player.width, player.height);
+    ctx.drawImage(playerSprite, player.x*tileSize, player.y*tileSize, player.width, player.height);
+
+    // Skräck-effekt: mörk overlay
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
 }
 
 // Game over
 function gameOver(){
     message.style.display='block';
     scareSound.play();
-    setTimeout(()=>{
-        message.style.display='none';
-        resetGame();
-    },2000);
+    setTimeout(()=>{message.style.display='none'; resetGame();},2000);
 }
 
-// Reset
 function resetGame(){
-    player = {x:1, y:1, width:28, height:28, color:'yellow', hasKey:false};
-    monster = {x:cols-3, y:rows-3, width:28, height:28, color:'red', speed:0.05};
+    player = {x:1, y:1, width:28, height:28, hasKey:false};
+    monster = {x:cols-3, y:rows-3, width:28, height:28, speed:0.05};
     key.picked = false;
 }
 
