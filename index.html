@@ -3,223 +3,105 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tips App med Bilder</title>
-
+<title>Snake Game</title>
 <style>
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #1e1e2f, #2b2b45);
-    color: white;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    text-align: center;
-}
-
-.container {
-    background: #2f2f4f;
-    padding: 30px;
-    border-radius: 15px;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-input, textarea {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 8px;
-    border: none;
-    font-size: 16px;
-}
-
-button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    background: #6c5ce7;
+    height: 100vh;
+    background: #222;
     color: white;
-    font-size: 16px;
-    cursor: pointer;
+    font-family: Arial, sans-serif;
 }
 
-button:hover {
-    background: #8577ff;
-}
-
-ul {
-    text-align: left;
-    padding-left: 20px;
-}
-
-img {
-    max-width: 100%;
-    margin: 10px 0;
-    border-radius: 8px;
+canvas {
+    background: #111;
+    border: 2px solid #fff;
 }
 </style>
 </head>
-
 <body>
 
-<div class="container">
-
-    <!-- LOGIN / REGISTER -->
-    <div id="loginSection">
-        <h2>Skapa konto / Logga in</h2>
-        <input type="text" id="username" placeholder="Användarnamn">
-        <input type="password" id="password" placeholder="Lösenord">
-        <button onclick="register()">Skapa konto</button>
-        <button onclick="login()">Logga in</button>
-    </div>
-
-    <!-- TIPS & BILDER -->
-    <div id="tipsSection" style="display:none;">
-        <h2>Tips och bilder</h2>
-
-        <textarea id="tipInput" placeholder="Skriv ditt tips här..."></textarea>
-        <button onclick="saveTip()">Skicka tips</button>
-
-        <h3>Sparade tips:</h3>
-        <ul id="tipsList"></ul>
-
-        <h3>Ladda upp bild</h3>
-        <input type="file" id="imageInput">
-        <button onclick="uploadImage()">Ladda upp</button>
-
-        <h3>Bilder från alla användare:</h3>
-        <div id="imageGallery"></div>
-
-        <button onclick="logout()">Logga ut</button>
-    </div>
-
-</div>
-
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<canvas id="gameCanvas" width="400" height="400"></canvas>
 
 <script>
-// ====== Din Firebase-konfiguration ======
-const firebaseConfig = {
-  apiKey: "DIN_API_KEY",
-  authDomain: "DIN_AUTH_DOMAIN",
-  projectId: "DITT_PROJECT_ID",
-  storageBucket: "DITT_STORAGE_BUCKET",
-  messagingSenderId: "DIN_MESSAGING_SENDER_ID",
-  appId: "DITT_APP_ID"
-};
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-const storage = firebase.storage();
+const grid = 20; // storlek på rutor
+let count = 0;
 
-// ====== Register med username ======
-function register() {
-    const username = document.getElementById("username").value.trim();
-    const pass = document.getElementById("password").value;
-    if (!username || !pass) { alert("Fyll i användarnamn och lösenord"); return; }
+let snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
+let apple = { x: 320, y: 320 };
 
-    const email = username + "@tipsapp.com"; // Dummy-email
-
-    auth.createUserWithEmailAndPassword(email, pass)
-        .then((userCredential) => {
-            // Spara användarnamn i Firestore
-            db.collection("users").doc(userCredential.user.uid).set({
-                username: username
-            });
-            alert("Konto skapat! Du kan nu logga in.");
-        })
-        .catch(err => alert(err.message));
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min)) + min;
 }
 
-// ====== Login med username ======
-function login() {
-    const username = document.getElementById("username").value.trim();
-    const pass = document.getElementById("password").value;
-    if (!username || !pass) { alert("Fyll i användarnamn och lösenord"); return; }
+function gameLoop() {
+    requestAnimationFrame(gameLoop);
 
-    const email = username + "@tipsapp.com"; // Dummy-email
+    if (++count < 4) return; // hastighet
+    count = 0;
 
-    auth.signInWithEmailAndPassword(email, pass)
-        .then(() => {
-            document.getElementById("loginSection").style.display = "none";
-            document.getElementById("tipsSection").style.display = "block";
-            loadTips();
-            loadImages();
-        })
-        .catch(err => alert(err.message));
-}
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-// ====== Logout ======
-function logout() {
-    auth.signOut().then(() => {
-        document.getElementById("loginSection").style.display = "block";
-        document.getElementById("tipsSection").style.display = "none";
+    // Flytta ormen
+    snake.x += snake.dx;
+    snake.y += snake.dy;
+
+    // Wrap around
+    if (snake.x < 0) snake.x = canvas.width - grid;
+    if (snake.x >= canvas.width) snake.x = 0;
+    if (snake.y < 0) snake.y = canvas.height - grid;
+    if (snake.y >= canvas.height) snake.y = 0;
+
+    // Spara positioner
+    snake.cells.unshift({x: snake.x, y: snake.y});
+    if (snake.cells.length > snake.maxCells) snake.cells.pop();
+
+    // Rita äpplet
+    ctx.fillStyle = "red";
+    ctx.fillRect(apple.x, apple.y, grid-1, grid-1);
+
+    // Rita ormen
+    ctx.fillStyle = "lime";
+    snake.cells.forEach((cell, index) => {
+        ctx.fillRect(cell.x, cell.y, grid-1, grid-1);
+
+        // Äpple-koll
+        if (cell.x === apple.x && cell.y === apple.y) {
+            snake.maxCells++;
+            apple.x = getRandomInt(0, canvas.width / grid) * grid;
+            apple.y = getRandomInt(0, canvas.height / grid) * grid;
+        }
+
+        // Koll mot sig själv
+        for (let i = index + 1; i < snake.cells.length; i++) {
+            if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+                // Reset
+                snake.x = 160;
+                snake.y = 160;
+                snake.cells = [];
+                snake.maxCells = 4;
+                snake.dx = grid;
+                snake.dy = 0;
+            }
+        }
     });
 }
 
-// ====== Tips ======
-function saveTip() {
-    const tip = document.getElementById("tipInput").value.trim();
-    if (!tip) return;
+// Tangenter
+document.addEventListener("keydown", function(e) {
+    if (e.key === "ArrowLeft" && snake.dx === 0) { snake.dx = -grid; snake.dy = 0; }
+    if (e.key === "ArrowRight" && snake.dx === 0) { snake.dx = grid; snake.dy = 0; }
+    if (e.key === "ArrowUp" && snake.dy === 0) { snake.dx = 0; snake.dy = -grid; }
+    if (e.key === "ArrowDown" && snake.dy === 0) { snake.dx = 0; snake.dy = grid; }
+});
 
-    db.collection("tips").add({
-        text: tip,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    })
-    .then(() => {
-        document.getElementById("tipInput").value = "";
-        loadTips();
-    });
-}
-
-function loadTips() {
-    db.collection("tips").orderBy("timestamp", "desc").get()
-      .then(snapshot => {
-          const tipsList = document.getElementById("tipsList");
-          tipsList.innerHTML = "";
-          snapshot.forEach(doc => {
-              const li = document.createElement("li");
-              li.textContent = doc.data().text;
-              tipsList.appendChild(li);
-          });
-      });
-}
-
-// ====== Bilder ======
-function uploadImage() {
-    const file = document.getElementById("imageInput").files[0];
-    if (!file) return;
-
-    const storageRef = storage.ref('images/' + file.name);
-    storageRef.put(file).then(() => {
-        alert("Bild uppladdad!");
-        loadImages();
-    });
-}
-
-function loadImages() {
-    const gallery = document.getElementById("imageGallery");
-    gallery.innerHTML = "";
-
-    storage.ref('images').listAll()
-    .then(result => {
-        result.items.forEach(imageRef => {
-            imageRef.getDownloadURL().then(url => {
-                const img = document.createElement("img");
-                img.src = url;
-                gallery.appendChild(img);
-            });
-        });
-    });
-}
+requestAnimationFrame(gameLoop);
 </script>
+
 </body>
 </html>
