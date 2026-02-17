@@ -3,167 +3,202 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Skräckspel – Överlev</title>
+<title>Skräckäventyr</title>
 <style>
 body {
     margin: 0;
     background: black;
     color: white;
     font-family: Arial, sans-serif;
-    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
 }
 
-#gameArea {
-    position: relative;
-    width: 800px;
-    height: 500px;
-    margin: 20px auto;
-    background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&h=500') no-repeat center/cover;
+#gameCanvas {
+    background: #111;
     border: 3px solid white;
-    overflow: hidden;
+    display: block;
 }
-
-#player {
-    position: absolute;
-    width: 40px;
-    height: 40px;
-    background: yellow;
-    top: 230px;
-    left: 380px;
-    border-radius: 5px;
-}
-
-#monster {
-    position: absolute;
-    width: 60px;
-    height: 60px;
-    background: url('https://i.imgur.com/3v8FqzJ.png') no-repeat center/cover;
-    top: -100px;
-    left: -100px;
-    display: none;
-}
-
 #message {
     position: absolute;
-    top: 200px;
-    width: 100%;
-    text-align: center;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     font-size: 32px;
     color: red;
     display: none;
-}
-
-#scoreBoard {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    font-size: 20px;
-    background: rgba(0,0,0,0.5);
-    padding: 5px 10px;
-    border-radius: 10px;
+    text-align: center;
 }
 </style>
 </head>
 <body>
 
-<div id="gameArea">
-    <div id="player"></div>
-    <div id="monster"></div>
-    <div id="message">Booo! Du blev skrämd!</div>
-    <div id="scoreBoard">Tid: 0 s</div>
-</div>
+<canvas id="gameCanvas" width="600" height="600"></canvas>
+<div id="message">GAME OVER!</div>
 
 <audio id="scareSound" src="https://www.soundjay.com/horror/horror-scream-01.mp3"></audio>
 
 <script>
-const player = document.getElementById('player');
-const monster = document.getElementById('monster');
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 const message = document.getElementById('message');
-const gameArea = document.getElementById('gameArea');
-const scoreBoard = document.getElementById('scoreBoard');
 const scareSound = document.getElementById('scareSound');
 
-let px = 380, py = 230;
-let mx = -100, my = -100;
-const speed = 10;
-let score = 0;
-let monsterActive = false;
+const grid = 30; // storlek på rutor
+const cols = canvas.width / grid;
+const rows = canvas.height / grid;
 
-// Starta poäng/tidräkning
-setInterval(()=>{ 
-    score++;
-    scoreBoard.textContent = "Tid: " + score + " s"; 
-},1000);
+// Spelare
+let player = {x:1, y:1, color:'yellow', hasKey:false};
+
+// Monster
+let monster = {x:10, y:10, color:'red', dirX:1, dirY:0};
+
+// Föremål (nyckel)
+let key = {x:5, y:5, color:'gold', picked:false};
+
+// Dörr
+let door = {x:cols-2, y:rows-2, color:'green'};
+
+// Väggar (enkel labyrint)
+let walls = [];
+for(let i=0;i<cols;i++){
+    walls.push({x:i, y:0});
+    walls.push({x:i, y:rows-1});
+}
+for(let i=0;i<rows;i++){
+    walls.push({x:0, y:i});
+    walls.push({x:cols-1, y:i});
+}
+// extra väggar
+walls.push({x:3,y:3},{x:3,y:4},{x:3,y:5},{x:6,y:6},{x:6,y:7},{x:6,y:8});
 
 // Tangenter
-document.addEventListener('keydown', e=>{
-    if(e.key==='ArrowLeft') px-=speed;
-    if(e.key==='ArrowRight') px+=speed;
-    if(e.key==='ArrowUp') py-=speed;
-    if(e.key==='ArrowDown') py+=speed;
+let keys = {};
+document.addEventListener('keydown', e=>{ keys[e.key]=true; });
+document.addEventListener('keyup', e=>{ keys[e.key]=false; });
 
-    px = Math.max(0, Math.min(gameArea.clientWidth-40, px));
-    py = Math.max(0, Math.min(gameArea.clientHeight-40, py));
+// Kollisionscheck
+function collides(x,y){
+    for(let w of walls) if(w.x===x && w.y===y) return true;
+    return false;
+}
 
-    player.style.left = px+'px';
-    player.style.top = py+'px';
-});
-
-// Jump scare slumpmässigt
-setInterval(()=>{
-    if(!monsterActive && Math.random()<0.02){
-        monsterActive = true;
-        mx = Math.random()*(gameArea.clientWidth-60);
-        my = Math.random()*(gameArea.clientHeight-60);
-        monster.style.left = mx+'px';
-        monster.style.top = my+'px';
-        monster.style.display = 'block';
-        scareSound.play();
-        message.style.display = 'block';
-        setTimeout(()=>{
-            monster.style.display = 'none';
-            message.style.display = 'none';
-            monsterActive = false;
-        },1500);
+// Game Loop
+let lastTime = 0;
+function gameLoop(time=0){
+    const delta = time - lastTime;
+    if(delta > 150){ // hastighet
+        lastTime = time;
+        update();
+        draw();
     }
-},500);
+    requestAnimationFrame(gameLoop);
+}
 
-// Monster rör sig mot spelaren om aktiv
-function moveMonster(){
-    if(monsterActive){
-        let dx = px - mx;
-        let dy = py - my;
-        let dist = Math.sqrt(dx*dx+dy*dy);
-        if(dist>0){
-            mx += (dx/dist)*3; // hastighet
-            my += (dy/dist)*3;
-        }
-        monster.style.left = mx+'px';
-        monster.style.top = my+'px';
+// Uppdatering
+function update(){
+    // Spelare
+    let newX = player.x;
+    let newY = player.y;
+    if(keys['ArrowLeft']) newX--;
+    if(keys['ArrowRight']) newX++;
+    if(keys['ArrowUp']) newY--;
+    if(keys['ArrowDown']) newY++;
+
+    if(!collides(newX,newY)){
+        player.x = newX;
+        player.y = newY;
     }
 
-    // Kolla kollision med spelare
-    if(monsterActive && px < mx+60 && px+40 > mx && py < my+60 && py+40 > my){
+    // Plocka upp nyckel
+    if(!key.picked && player.x===key.x && player.y===key.y){
+        key.picked = true;
+        player.hasKey = true;
+        alert("Du tog nyckeln!");
+    }
+
+    // Öppna dörr
+    if(player.hasKey && player.x===door.x && player.y===door.y){
+        alert("Grattis! Du klarade spelet!");
+        resetGame();
+    }
+
+    // Monster rör sig
+    monster.x += monster.dirX;
+    monster.y += monster.dirY;
+
+    if(collides(monster.x,monster.y)){
+        monster.dirX *= -1;
+        monster.dirY *= -1;
+        monster.x += monster.dirX;
+        monster.y += monster.dirY;
+    }
+
+    // Monster jagar spelare
+    if(Math.random()<0.5){
+        if(player.x>monster.x) monster.x++;
+        if(player.x<monster.x) monster.x--;
+    } else {
+        if(player.y>monster.y) monster.y++;
+        if(player.y<monster.y) monster.y--;
+    }
+
+    // Kollision med monster
+    if(player.x===monster.x && player.y===monster.y){
         gameOver();
     }
-
-    requestAnimationFrame(moveMonster);
 }
-moveMonster();
 
+// Rita
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // Väggar
+    for(let w of walls){
+        ctx.fillStyle='gray';
+        ctx.fillRect(w.x*grid, w.y*grid, grid, grid);
+    }
+
+    // Dörr
+    ctx.fillStyle = door.color;
+    ctx.fillRect(door.x*grid, door.y*grid, grid, grid);
+
+    // Nyckel
+    if(!key.picked){
+        ctx.fillStyle = key.color;
+        ctx.fillRect(key.x*grid, key.y*grid, grid, grid);
+    }
+
+    // Monster
+    ctx.fillStyle = monster.color;
+    ctx.fillRect(monster.x*grid, monster.y*grid, grid, grid);
+
+    // Spelare
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x*grid, player.y*grid, grid, grid);
+}
+
+// Game over
 function gameOver(){
-    alert("Game Over! Du överlevde "+score+" sekunder");
-    // Reset
-    px=380; py=230;
-    player.style.left = px+'px';
-    player.style.top = py+'px';
-    monster.style.display = 'none';
-    score = 0;
-    scoreBoard.textContent = "Tid: 0 s";
-    monsterActive = false;
+    message.style.display='block';
+    scareSound.play();
+    setTimeout(()=>{
+        message.style.display='none';
+        resetGame();
+    },2000);
 }
-</script>
 
+// Reset
+function resetGame(){
+    player = {x:1, y:1, color:'yellow', hasKey:false};
+    monster = {x:10, y:10, color:'red', dirX:1, dirY:0};
+    key.picked = false;
+}
+
+gameLoop();
+</script>
 </body>
 </html>
-
