@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mini Skräckspel</title>
+<title>Skräckspel – Överlev</title>
 <style>
 body {
     margin: 0;
@@ -12,14 +12,17 @@ body {
     font-family: Arial, sans-serif;
     overflow: hidden;
 }
+
 #gameArea {
     position: relative;
     width: 800px;
     height: 500px;
-    margin: 50px auto;
+    margin: 20px auto;
     background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&h=500') no-repeat center/cover;
     border: 3px solid white;
+    overflow: hidden;
 }
+
 #player {
     position: absolute;
     width: 40px;
@@ -27,15 +30,19 @@ body {
     background: yellow;
     top: 230px;
     left: 380px;
+    border-radius: 5px;
 }
+
 #monster {
     position: absolute;
-    width: 80px;
-    height: 80px;
-    top: -100px; /* börjar utanför skärmen */
-    left: 350px;
+    width: 60px;
+    height: 60px;
+    background: url('https://i.imgur.com/3v8FqzJ.png') no-repeat center/cover;
+    top: -100px;
+    left: -100px;
     display: none;
 }
+
 #message {
     position: absolute;
     top: 200px;
@@ -45,14 +52,25 @@ body {
     color: red;
     display: none;
 }
+
+#scoreBoard {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 20px;
+    background: rgba(0,0,0,0.5);
+    padding: 5px 10px;
+    border-radius: 10px;
+}
 </style>
 </head>
 <body>
 
 <div id="gameArea">
     <div id="player"></div>
-    <img id="monster" src="https://i.imgur.com/3v8FqzJ.png" alt="monster">
+    <div id="monster"></div>
     <div id="message">Booo! Du blev skrämd!</div>
+    <div id="scoreBoard">Tid: 0 s</div>
 </div>
 
 <audio id="scareSound" src="https://www.soundjay.com/horror/horror-scream-01.mp3"></audio>
@@ -61,45 +79,91 @@ body {
 const player = document.getElementById('player');
 const monster = document.getElementById('monster');
 const message = document.getElementById('message');
-const scareSound = document.getElementById('scareSound');
 const gameArea = document.getElementById('gameArea');
+const scoreBoard = document.getElementById('scoreBoard');
+const scareSound = document.getElementById('scareSound');
 
-let px = 380; // player x
-let py = 230; // player y
+let px = 380, py = 230;
+let mx = -100, my = -100;
 const speed = 10;
+let score = 0;
+let monsterActive = false;
 
-// rörelse med piltangenter
-document.addEventListener('keydown', e => {
-    if(e.key === 'ArrowLeft') px -= speed;
-    if(e.key === 'ArrowRight') px += speed;
-    if(e.key === 'ArrowUp') py -= speed;
-    if(e.key === 'ArrowDown') py += speed;
+// Starta poäng/tidräkning
+setInterval(()=>{ 
+    score++;
+    scoreBoard.textContent = "Tid: " + score + " s"; 
+},1000);
 
-    // håll spelaren inom ramar
-    px = Math.max(0, Math.min(gameArea.clientWidth - 40, px));
-    py = Math.max(0, Math.min(gameArea.clientHeight - 40, py));
+// Tangenter
+document.addEventListener('keydown', e=>{
+    if(e.key==='ArrowLeft') px-=speed;
+    if(e.key==='ArrowRight') px+=speed;
+    if(e.key==='ArrowUp') py-=speed;
+    if(e.key==='ArrowDown') py+=speed;
 
-    player.style.left = px + 'px';
-    player.style.top = py + 'px';
+    px = Math.max(0, Math.min(gameArea.clientWidth-40, px));
+    py = Math.max(0, Math.min(gameArea.clientHeight-40, py));
 
-    checkScare();
+    player.style.left = px+'px';
+    player.style.top = py+'px';
 });
 
-// slumpmässig jump scare
-function checkScare(){
-    if(Math.random() < 0.01){ // ca 1% chans vid rörelse
+// Jump scare slumpmässigt
+setInterval(()=>{
+    if(!monsterActive && Math.random()<0.02){
+        monsterActive = true;
+        mx = Math.random()*(gameArea.clientWidth-60);
+        my = Math.random()*(gameArea.clientHeight-60);
+        monster.style.left = mx+'px';
+        monster.style.top = my+'px';
         monster.style.display = 'block';
-        monster.style.top = (Math.random()* (gameArea.clientHeight - 80)) + 'px';
-        monster.style.left = (Math.random()* (gameArea.clientWidth - 80)) + 'px';
         scareSound.play();
         message.style.display = 'block';
-        setTimeout(() => {
+        setTimeout(()=>{
             monster.style.display = 'none';
             message.style.display = 'none';
-        }, 1500);
+            monsterActive = false;
+        },1500);
     }
+},500);
+
+// Monster rör sig mot spelaren om aktiv
+function moveMonster(){
+    if(monsterActive){
+        let dx = px - mx;
+        let dy = py - my;
+        let dist = Math.sqrt(dx*dx+dy*dy);
+        if(dist>0){
+            mx += (dx/dist)*3; // hastighet
+            my += (dy/dist)*3;
+        }
+        monster.style.left = mx+'px';
+        monster.style.top = my+'px';
+    }
+
+    // Kolla kollision med spelare
+    if(monsterActive && px < mx+60 && px+40 > mx && py < my+60 && py+40 > my){
+        gameOver();
+    }
+
+    requestAnimationFrame(moveMonster);
+}
+moveMonster();
+
+function gameOver(){
+    alert("Game Over! Du överlevde "+score+" sekunder");
+    // Reset
+    px=380; py=230;
+    player.style.left = px+'px';
+    player.style.top = py+'px';
+    monster.style.display = 'none';
+    score = 0;
+    scoreBoard.textContent = "Tid: 0 s";
+    monsterActive = false;
 }
 </script>
 
 </body>
 </html>
+
