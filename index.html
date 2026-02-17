@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snake Game</title>
+<title>Snake Game med Poäng</title>
 <style>
 body {
     display: flex;
@@ -13,25 +13,32 @@ body {
     background: #222;
     color: white;
     font-family: Arial, sans-serif;
+    flex-direction: column;
 }
-
 canvas {
     background: #111;
     border: 2px solid #fff;
+}
+#score {
+    margin-bottom: 10px;
+    font-size: 24px;
 }
 </style>
 </head>
 <body>
 
+<div id="score">Poäng: 0</div>
 <canvas id="gameCanvas" width="400" height="400"></canvas>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const grid = 20; // storlek på rutor
+const grid = 20;
+let speed = 6; // start-hastighet (frames per second)
 let count = 0;
 
+let score = 0;
 let snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
 let apple = { x: 320, y: 320 };
 
@@ -42,7 +49,7 @@ function getRandomInt(min, max) {
 function gameLoop() {
     requestAnimationFrame(gameLoop);
 
-    if (++count < 4) return; // hastighet
+    if (++count < speed) return;
     count = 0;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -51,7 +58,7 @@ function gameLoop() {
     snake.x += snake.dx;
     snake.y += snake.dy;
 
-    // Wrap around
+    // Wrap-around
     if (snake.x < 0) snake.x = canvas.width - grid;
     if (snake.x >= canvas.width) snake.x = 0;
     if (snake.y < 0) snake.y = canvas.height - grid;
@@ -73,6 +80,12 @@ function gameLoop() {
         // Äpple-koll
         if (cell.x === apple.x && cell.y === apple.y) {
             snake.maxCells++;
+            score++;
+            document.getElementById("score").textContent = "Poäng: " + score;
+
+            // Öka hastigheten lite
+            if (speed > 2) speed -= 0.1;
+
             apple.x = getRandomInt(0, canvas.width / grid) * grid;
             apple.y = getRandomInt(0, canvas.height / grid) * grid;
         }
@@ -87,6 +100,9 @@ function gameLoop() {
                 snake.maxCells = 4;
                 snake.dx = grid;
                 snake.dy = 0;
+                score = 0;
+                speed = 6;
+                document.getElementById("score").textContent = "Poäng: " + score;
             }
         }
     });
