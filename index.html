@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Klassens Avslutning 🎉</title>
+<title>Tips App med Bilder</title>
 
 <style>
 body {
@@ -14,7 +14,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;
     text-align: center;
 }
 
@@ -23,11 +23,11 @@ body {
     padding: 30px;
     border-radius: 15px;
     width: 90%;
-    max-width: 500px;
+    max-width: 400px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
-input {
+input, textarea {
     width: 100%;
     padding: 10px;
     margin: 10px 0;
@@ -44,34 +44,21 @@ button {
     color: white;
     font-size: 16px;
     cursor: pointer;
-    transition: 0.3s ease;
-    margin-top: 10px;
 }
 
 button:hover {
     background: #8577ff;
 }
 
-button:active {
-    transform: scale(0.95);
+ul {
+    text-align: left;
+    padding-left: 20px;
 }
 
-#welcomeText {
-    font-size: 22px;
-    color: #ffeaa7;
-    margin-bottom: 20px;
-}
-
-#challengeBox {
-    margin-top: 20px;
-    padding: 15px;
-    background: #3b3b6b;
-    border-radius: 10px;
-    min-height: 50px;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+img {
+    max-width: 100%;
+    margin: 10px 0;
+    border-radius: 8px;
 }
 </style>
 </head>
@@ -80,67 +67,149 @@ button:active {
 
 <div class="container">
 
-    <!-- LOGIN -->
+    <!-- REGISTER / LOGIN -->
     <div id="loginSection">
-        <h2>Logga in 🎓</h2>
-        <input type="text" id="username" placeholder="Användarnamn">
+        <h2>Skapa konto / Logga in</h2>
+        <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Lösenord">
-        <button id="loginBtn">Logga in</button>
+        <button onclick="register()">Skapa konto</button>
+        <button onclick="login()">Logga in</button>
     </div>
 
-    <!-- AVSLUTNINGSSIDA -->
-    <div id="mainSection" style="display:none;">
-        <h2 id="welcomeText"></h2>
+    <!-- TIPS & BILDER -->
+    <div id="tipsSection" style="display:none;">
+        <h2>Tips och bilder</h2>
 
-        <h3>🎲 Slumpa en klass-utmaning</h3>
-        <button id="randomBtn">Slumpa!</button>
+        <textarea id="tipInput" placeholder="Skriv ditt tips här..."></textarea>
+        <button onclick="saveTip()">Skicka tips</button>
 
-        <div id="challengeBox">
-            Tryck på knappen för att börja 😎
-        </div>
+        <h3>Sparade tips:</h3>
+        <ul id="tipsList"></ul>
+
+        <h3>Ladda upp bild</h3>
+        <input type="file" id="imageInput">
+        <button onclick="uploadImage()">Ladda upp</button>
+
+        <h3>Bilder från alla användare:</h3>
+        <div id="imageGallery"></div>
+
+        <button onclick="logout()">Logga ut</button>
     </div>
 
 </div>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
 <script>
+// ====== Din Firebase-konfiguration ======
+const firebaseConfig = {
+  apiKey: "DIN_API_KEY",
+  authDomain: "DIN_AUTH_DOMAIN",
+  projectId: "DITT_PROJECT_ID",
+  storageBucket: "DITT_STORAGE_BUCKET",
+  messagingSenderId: "DIN_MESSAGING_SENDER_ID",
+  appId: "DITT_APP_ID"
+};
 
-const challenges = [
-    "Hela klassen ska göra 10 armhävningar!",
-    "Alla ska byta plats med någon!",
-    "Sjunga en låt tillsammans 🎤",
-    "Ta en gruppbild NU 📸",
-    "Ge en komplimang till personen bredvid dig!",
-    "Läraren ska berätta en pinsam historia 😆",
-    "Alla ska applådera i 10 sekunder 👏",
-    "Gör en våg genom klassrummet 🌊",
-    "Skrik 'VI KLARADE DET!' tillsammans 🎉"
-];
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
 
-document.getElementById("loginBtn").addEventListener("click", login);
-document.getElementById("randomBtn").addEventListener("click", randomChallenge);
-
-function login() {
-    const user = document.getElementById("username").value;
+// ====== Register ======
+function register() {
+    const email = document.getElementById("email").value;
     const pass = document.getElementById("password").value;
+    if (!email || !pass) { alert("Fyll i email och lösenord"); return; }
 
-    if (user && pass) {
-        document.getElementById("loginSection").style.display = "none";
-        document.getElementById("mainSection").style.display = "block";
-        document.getElementById("welcomeText").textContent =
-            "Välkommen " + user + "! 🎉 Nu kör vi!";
-    } else {
-        alert("Fyll i användarnamn och lösenord!");
-    }
+    auth.createUserWithEmailAndPassword(email, pass)
+        .then(() => alert("Konto skapat! Du kan nu logga in."))
+        .catch(err => alert(err.message));
 }
 
-function randomChallenge() {
-    const random =
-        challenges[Math.floor(Math.random() * challenges.length)];
+// ====== Login ======
+function login() {
+    const email = document.getElementById("email").value;
+    const pass = document.getElementById("password").value;
+    if (!email || !pass) { alert("Fyll i email och lösenord"); return; }
 
-    document.getElementById("challengeBox").textContent = random;
+    auth.signInWithEmailAndPassword(email, pass)
+        .then(() => {
+            document.getElementById("loginSection").style.display = "none";
+            document.getElementById("tipsSection").style.display = "block";
+            loadTips();
+            loadImages();
+        })
+        .catch(err => alert(err.message));
 }
 
+// ====== Logout ======
+function logout() {
+    auth.signOut().then(() => {
+        document.getElementById("loginSection").style.display = "block";
+        document.getElementById("tipsSection").style.display = "none";
+    });
+}
+
+// ====== Tips ======
+function saveTip() {
+    const tip = document.getElementById("tipInput").value.trim();
+    if (!tip) return;
+
+    db.collection("tips").add({
+        text: tip,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+        document.getElementById("tipInput").value = "";
+        loadTips();
+    });
+}
+
+function loadTips() {
+    db.collection("tips").orderBy("timestamp", "desc").get()
+      .then(snapshot => {
+          const tipsList = document.getElementById("tipsList");
+          tipsList.innerHTML = "";
+          snapshot.forEach(doc => {
+              const li = document.createElement("li");
+              li.textContent = doc.data().text;
+              tipsList.appendChild(li);
+          });
+      });
+}
+
+// ====== Bilder ======
+function uploadImage() {
+    const file = document.getElementById("imageInput").files[0];
+    if (!file) return;
+
+    const storageRef = storage.ref('images/' + file.name);
+    storageRef.put(file).then(() => {
+        alert("Bild uppladdad!");
+        loadImages();
+    });
+}
+
+function loadImages() {
+    const gallery = document.getElementById("imageGallery");
+    gallery.innerHTML = "";
+
+    storage.ref('images').listAll()
+    .then(result => {
+        result.items.forEach(imageRef => {
+            imageRef.getDownloadURL().then(url => {
+                const img = document.createElement("img");
+                img.src = url;
+                gallery.appendChild(img);
+            });
+        });
+    });
+}
 </script>
-
 </body>
 </html>
