@@ -1,226 +1,91 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reaktionsspel Online</title>
+    <meta charset="UTF-8">
+    <title>Albin Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
 
-<style>
-* { box-sizing: border-box; }
+        h1 {
+            margin-top: 40px;
+        }
 
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #111;
-  color: white;
-  text-align: center;
-}
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
 
-h1 { margin-top: 20px; }
-
-#gameArea {
-  height: 50vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  font-weight: bold;
-  border-radius: 20px;
-  margin: 20px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.red { background: #ff3b3b; }
-.green { background: #00c853; }
-
-button {
-  padding: 12px 25px;
-  font-size: 1rem;
-  border: none;
-  border-radius: 12px;
-  margin: 10px;
-  background: #2196f3;
-  color: white;
-  cursor: pointer;
-}
-
-input {
-  padding: 10px;
-  font-size: 1rem;
-  border-radius: 10px;
-  border: none;
-  margin-top: 10px;
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-}
-
-li {
-  background: #222;
-  margin: 5px auto;
-  padding: 8px;
-  border-radius: 8px;
-  max-width: 300px;
-}
-
-/* Tutorial */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.85);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: #222;
-  padding: 25px;
-  border-radius: 20px;
-  max-width: 320px;
-  text-align: center;
-}
-</style>
+        #scoreDisplay {
+            font-size: 24px;
+            margin: 20px;
+        }
+    </style>
 </head>
 <body>
 
-<!-- 🔊 Ljud -->
-<audio id="goSound" src="https://www.soundjay.com/buttons/sounds/beep-07.mp3"></audio>
+    <h1>Albin Clicker Game</h1>
 
-<!-- 🎮 Tutorial -->
-<div id="tutorialModal" class="modal">
-  <div class="modal-content">
-    <h2>🎮 Hur spelar man?</h2>
-    <p>1️⃣ Tryck på Start</p>
-    <p>2️⃣ Vänta tills rutan blir GRÖN</p>
-    <p>3️⃣ Klicka så snabbt du kan</p>
-    <p>4️⃣ Skriv ditt namn och spara</p>
-    <button id="closeTutorialBtn">Jag fattar!</button>
-  </div>
-</div>
+    <div id="scoreDisplay">Poäng: 0</div>
 
-<h1>🎮 Reaktionsspel Online</h1>
+    <button id="startBtn">Start Game</button>
+    <button id="clickBtn" disabled>Klicka</button>
+    <button id="saveBtn">Spara Score</button>
 
-<div id="gameArea" class="red">
-  Tryck på Start
-</div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
 
-<button id="startBtn">Start</button>
+            let score = 0;
+            let gameStarted = false;
 
-<h2 id="result"></h2>
+            const scoreDisplay = document.getElementById("scoreDisplay");
+            const startBtn = document.getElementById("startBtn");
+            const clickBtn = document.getElementById("clickBtn");
+            const saveBtn = document.getElementById("saveBtn");
 
-<div>
-  <h3>🏆 Leaderboard (Live)</h3>
-  <input type="text" id="playerName" placeholder="Ditt namn">
-  <br>
-  <button id="saveBtn">Spara resultat</button>
-  <ul id="scoreList"></ul>
-</div>
+            function updateDisplay() {
+                scoreDisplay.textContent = "Poäng: " + score;
+            }
 
-<script type="module">
+            function startGame() {
+                score = 0;
+                gameStarted = true;
+                clickBtn.disabled = false;
+                updateDisplay();
+                console.log("Game started");
+            }
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+            function addPoint() {
+                if (!gameStarted) return;
+                score++;
+                updateDisplay();
+            }
 
-const firebaseConfig = {
-  apiKey: "DIN_API_KEY_HÄR",
-  authDomain: "reaktionsspel.firebaseapp.com",
-  databaseURL: "https://reaktionsspel-default-rtdb.firebaseio.com",
-  projectId: "reaktionsspel",
-  storageBucket: "reaktionsspel.firebasestorage.app",
-  messagingSenderId: "806381114919",
-  appId: "1:806381114919:web:6f98fbfd8491b57478e002"
-};
+            function saveScore() {
+                localStorage.setItem("savedScore", score);
+                alert("Score sparad!");
+            }
 
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
-const scoresRef = ref(database, "scores");
+            function loadScore() {
+                const saved = localStorage.getItem("savedScore");
+                if (saved !== null) {
+                    score = parseInt(saved);
+                    updateDisplay();
+                }
+            }
 
-let startTime;
-let canClick = false;
-let lastReaction = null;
+            startBtn.addEventListener("click", startGame);
+            clickBtn.addEventListener("click", addPoint);
+            saveBtn.addEventListener("click", saveScore);
 
-const gameArea = document.getElementById("gameArea");
-const result = document.getElementById("result");
-const startBtn = document.getElementById("startBtn");
-const saveBtn = document.getElementById("saveBtn");
-const closeTutorialBtn = document.getElementById("closeTutorialBtn");
+            loadScore();
+        });
+    </script>
 
-/* 🎮 Tutorial första gången */
-window.addEventListener("load", () => {
-  if (!localStorage.getItem("tutorialSeen")) {
-    document.getElementById("tutorialModal").style.display = "flex";
-  }
-});
-
-closeTutorialBtn.addEventListener("click", () => {
-  document.getElementById("tutorialModal").style.display = "none";
-  localStorage.setItem("tutorialSeen", "yes");
-});
-
-/* 🎮 Start Game */
-function startGame() {
-  result.textContent = "";
-  gameArea.className = "red";
-  gameArea.textContent = "Vänta på grönt...";
-  canClick = false;
-
-  const randomTime = Math.random() * 3000 + 2000;
-
-  setTimeout(() => {
-    gameArea.className = "green";
-    gameArea.textContent = "KLICKA NU!";
-    startTime = Date.now();
-    canClick = true;
-
-    // 🔊 Spela ljud
-    const sound = document.getElementById("goSound");
-    sound.currentTime = 0;
-    sound.play().catch(() => {});
-  }, randomTime);
-}
-
-/* Klick på rutan */
-gameArea.addEventListener("click", () => {
-  if (!canClick) {
-    result.textContent = "❌ För tidigt!";
-    return;
-  }
-
-  const reactionTime = Date.now() - startTime;
-  lastReaction = reactionTime;
-  result.textContent = "Din reaktionstid: " + reactionTime + " ms";
-  gameArea.className = "red";
-  gameArea.textContent = "Tryck på Start igen";
-  canClick = false;
-});
-
-/* 💾 Spara score */
-function saveScore() {
-  const name = document.getElementById("playerName").value;
-
-  if (!name || lastReaction === null) {
-    alert("Spela först och skriv ditt namn!");
-    return;
-  }
-
-  push(scoresRef, {
-    name: name,
-    time: lastReaction
-  });
-
-  document.getElementById("playerName").value = "";
-}
-
-/* Event listeners */
-startBtn.addEventListener("click", startGame);
-saveBtn.addEventListener("click", saveScore);
-
-/* 🏆 Live leader
+</body>
+</html>
