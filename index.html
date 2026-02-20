@@ -66,7 +66,7 @@ li {
   max-width: 300px;
 }
 
-/* 🔥 Tutorial Modal */
+/* Tutorial */
 .modal {
   position: fixed;
   top: 0;
@@ -94,7 +94,7 @@ li {
 <!-- 🔊 Ljud -->
 <audio id="goSound" src="https://www.soundjay.com/buttons/sounds/beep-07.mp3"></audio>
 
-<!-- 🔥 Tutorial Popup -->
+<!-- 🎮 Tutorial -->
 <div id="tutorialModal" class="modal">
   <div class="modal-content">
     <h2>🎮 Hur spelar man?</h2>
@@ -102,7 +102,7 @@ li {
     <p>2️⃣ Vänta tills rutan blir GRÖN</p>
     <p>3️⃣ Klicka så snabbt du kan</p>
     <p>4️⃣ Skriv ditt namn och spara</p>
-    <button onclick="closeTutorial()">Jag fattar!</button>
+    <button id="closeTutorialBtn">Jag fattar!</button>
   </div>
 </div>
 
@@ -112,7 +112,7 @@ li {
   Tryck på Start
 </div>
 
-<button onclick="startGame()">Start</button>
+<button id="startBtn">Start</button>
 
 <h2 id="result"></h2>
 
@@ -120,7 +120,7 @@ li {
   <h3>🏆 Leaderboard (Live)</h3>
   <input type="text" id="playerName" placeholder="Ditt namn">
   <br>
-  <button onclick="saveScore()">Spara resultat</button>
+  <button id="saveBtn">Spara resultat</button>
   <ul id="scoreList"></ul>
 </div>
 
@@ -149,21 +149,24 @@ let lastReaction = null;
 
 const gameArea = document.getElementById("gameArea");
 const result = document.getElementById("result");
+const startBtn = document.getElementById("startBtn");
+const saveBtn = document.getElementById("saveBtn");
+const closeTutorialBtn = document.getElementById("closeTutorialBtn");
 
-/* 🔥 Tutorial – visas bara första gången */
+/* 🎮 Tutorial första gången */
 window.addEventListener("load", () => {
   if (!localStorage.getItem("tutorialSeen")) {
     document.getElementById("tutorialModal").style.display = "flex";
   }
 });
 
-window.closeTutorial = function() {
+closeTutorialBtn.addEventListener("click", () => {
   document.getElementById("tutorialModal").style.display = "none";
   localStorage.setItem("tutorialSeen", "yes");
-};
+});
 
 /* 🎮 Start Game */
-window.startGame = function() {
+function startGame() {
   result.textContent = "";
   gameArea.className = "red";
   gameArea.textContent = "Vänta på grönt...";
@@ -177,12 +180,14 @@ window.startGame = function() {
     startTime = Date.now();
     canClick = true;
 
-    // 🔊 Spela ljud när det blir grönt
-    document.getElementById("goSound").play();
-
+    // 🔊 Spela ljud
+    const sound = document.getElementById("goSound");
+    sound.currentTime = 0;
+    sound.play().catch(() => {});
   }, randomTime);
-};
+}
 
+/* Klick på rutan */
 gameArea.addEventListener("click", () => {
   if (!canClick) {
     result.textContent = "❌ För tidigt!";
@@ -198,7 +203,7 @@ gameArea.addEventListener("click", () => {
 });
 
 /* 💾 Spara score */
-window.saveScore = function() {
+function saveScore() {
   const name = document.getElementById("playerName").value;
 
   if (!name || lastReaction === null) {
@@ -212,17 +217,10 @@ window.saveScore = function() {
   });
 
   document.getElementById("playerName").value = "";
-};
+}
 
-/* 🏆 Live leaderboard */
-onValue(scoresRef, (snapshot) => {
-  const data = snapshot.val();
-  const scoreList = document.getElementById("scoreList");
-  scoreList.innerHTML = "";
+/* Event listeners */
+startBtn.addEventListener("click", startGame);
+saveBtn.addEventListener("click", saveScore);
 
-  if (data) {
-    Object.values(data)
-      .sort((a, b) => a.time - b.time)
-      .slice(0, 10)
-      .forEach(score => {
-        const li = docu
+/* 🏆 Live leader
