@@ -2,41 +2,102 @@
 <html lang="sv">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Reaktionsspel</title>
 
 <style>
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    text-align: center;
-    background-color: #222;
+    background: #111;
     color: white;
+    text-align: center;
+    overflow: hidden;
+}
+
+h1 {
+    margin: 15px 0;
+    font-size: 1.8rem;
 }
 
 #gameArea {
-    height: 60vh;
+    height: 65vh;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2rem;
+    font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background 0.15s;
+    border-radius: 20px;
+    margin: 10px;
 }
 
-.red { background-color: #e74c3c; }
-.green { background-color: #2ecc71; }
+.red {
+    background: #ff3b3b;
+}
+
+.green {
+    background: #00c853;
+}
 
 button {
-    padding: 10px 20px;
-    font-size: 1rem;
-    margin-top: 20px;
-    cursor: pointer;
+    padding: 14px 25px;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 12px;
+    margin: 10px;
+    background: #2196f3;
+    color: white;
+}
+
+button:active {
+    transform: scale(0.95);
 }
 
 input {
-    padding: 5px;
+    padding: 12px;
     font-size: 1rem;
+    border-radius: 10px;
+    border: none;
+    margin-top: 10px;
+    width: 80%;
+    max-width: 250px;
+}
+
+#result {
+    font-size: 1.4rem;
+    margin-top: 10px;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    background: #222;
+    margin: 5px auto;
+    padding: 8px;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 300px;
+    font-size: 1rem;
+}
+
+/* Extra mobiloptimering */
+@media (max-width: 500px) {
+    #gameArea {
+        font-size: 1.6rem;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
 }
 </style>
 </head>
@@ -46,7 +107,7 @@ input {
 <h1>🧠 Reaktionsspel</h1>
 
 <div id="gameArea" class="red">
-    Klicka på Start
+    Tryck på Start
 </div>
 
 <button onclick="startGame()">Start</button>
@@ -56,6 +117,7 @@ input {
 <div>
     <h3>🏆 Highscore</h3>
     <input type="text" id="playerName" placeholder="Ditt namn">
+    <br>
     <button onclick="saveScore()">Spara resultat</button>
     <ul id="scoreList"></ul>
 </div>
@@ -80,13 +142,16 @@ function startGame() {
 
     timeout = setTimeout(() => {
         gameArea.className = "green";
-        gameArea.textContent = "KLICKA NU!";
+        gameArea.textContent = "TRYCK NU!";
         startTime = Date.now();
         canClick = true;
     }, randomTime);
 }
 
-document.getElementById("gameArea").addEventListener("click", function() {
+document.getElementById("gameArea").addEventListener("touchstart", handleClick);
+document.getElementById("gameArea").addEventListener("click", handleClick);
+
+function handleClick() {
     if (!canClick) {
         clearTimeout(timeout);
         this.textContent = "För tidigt! 😅";
@@ -99,10 +164,10 @@ document.getElementById("gameArea").addEventListener("click", function() {
     document.getElementById("result").textContent =
         "Din reaktionstid: " + reactionTime + " ms";
 
-    this.textContent = "Klicka Start för att spela igen";
+    this.textContent = "Tryck Start för att spela igen";
     this.className = "red";
     canClick = false;
-});
+}
 
 function saveScore() {
     if (lastReaction === null) {
@@ -122,7 +187,6 @@ function saveScore() {
     scores.sort((a, b) => a.time - b.time);
 
     localStorage.setItem("scores", JSON.stringify(scores));
-
     displayScores();
 }
 
