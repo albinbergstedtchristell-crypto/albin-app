@@ -1,13 +1,145 @@
 <!DOCTYPE html>
-<html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reaktionsspel</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #222;
+    color: white;
+}
+
+#gameArea {
+    height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.red { background-color: #e74c3c; }
+.green { background-color: #2ecc71; }
+
+button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    margin-top: 20px;
+    cursor: pointer;
+}
+
+input {
+    padding: 5px;
+    font-size: 1rem;
+}
+</style>
+</head>
+
 <body>
 
-<button id="testBtn">Klicka här</button>
+<h1>🧠 Reaktionsspel</h1>
+
+<div id="gameArea" class="red">
+    Klicka på Start
+</div>
+
+<button onclick="startGame()">Start</button>
+
+<h2 id="result"></h2>
+
+<div>
+    <h3>🏆 Highscore</h3>
+    <input type="text" id="playerName" placeholder="Ditt namn">
+    <button onclick="saveScore()">Spara resultat</button>
+    <ul id="scoreList"></ul>
+</div>
 
 <script>
-  document.getElementById("testBtn").addEventListener("click", function() {
-    alert("Det funkar!");
-  });
+let startTime;
+let timeout;
+let canClick = false;
+let lastReaction = null;
+
+function startGame() {
+    const gameArea = document.getElementById("gameArea");
+    const result = document.getElementById("result");
+
+    result.textContent = "";
+    gameArea.className = "red";
+    gameArea.textContent = "Vänta...";
+
+    canClick = false;
+
+    const randomTime = Math.random() * 3000 + 2000;
+
+    timeout = setTimeout(() => {
+        gameArea.className = "green";
+        gameArea.textContent = "KLICKA NU!";
+        startTime = Date.now();
+        canClick = true;
+    }, randomTime);
+}
+
+document.getElementById("gameArea").addEventListener("click", function() {
+    if (!canClick) {
+        clearTimeout(timeout);
+        this.textContent = "För tidigt! 😅";
+        return;
+    }
+
+    const reactionTime = Date.now() - startTime;
+    lastReaction = reactionTime;
+
+    document.getElementById("result").textContent =
+        "Din reaktionstid: " + reactionTime + " ms";
+
+    this.textContent = "Klicka Start för att spela igen";
+    this.className = "red";
+    canClick = false;
+});
+
+function saveScore() {
+    if (lastReaction === null) {
+        alert("Spela först!");
+        return;
+    }
+
+    const name = document.getElementById("playerName").value;
+    if (name === "") {
+        alert("Skriv ditt namn!");
+        return;
+    }
+
+    let scores = JSON.parse(localStorage.getItem("scores")) || [];
+    scores.push({ name: name, time: lastReaction });
+
+    scores.sort((a, b) => a.time - b.time);
+
+    localStorage.setItem("scores", JSON.stringify(scores));
+
+    displayScores();
+}
+
+function displayScores() {
+    const scoreList = document.getElementById("scoreList");
+    scoreList.innerHTML = "";
+
+    let scores = JSON.parse(localStorage.getItem("scores")) || [];
+
+    scores.slice(0, 5).forEach(score => {
+        const li = document.createElement("li");
+        li.textContent = score.name + " - " + score.time + " ms";
+        scoreList.appendChild(li);
+    });
+}
+
+displayScores();
 </script>
 
 </body>
