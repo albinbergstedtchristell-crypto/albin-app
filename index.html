@@ -45,6 +45,10 @@ button {
   cursor: pointer;
 }
 
+button:hover {
+  opacity: 0.8;
+}
+
 input {
   padding: 10px;
   font-size: 1rem;
@@ -66,7 +70,7 @@ li {
   max-width: 300px;
 }
 
-/* 🔥 Tutorial Modal */
+/* Tutorial Modal */
 .modal {
   position: fixed;
   top: 0;
@@ -91,7 +95,7 @@ li {
 </head>
 <body>
 
-<!-- 🔥 Tutorial Popup -->
+<!-- Tutorial -->
 <div id="tutorialModal" class="modal">
   <div class="modal-content">
     <h2>🎮 Hur spelar man?</h2>
@@ -126,6 +130,7 @@ li {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+/* 🔥 Firebase Config */
 const firebaseConfig = {
   apiKey: "DIN_API_KEY",
   authDomain: "reaktionsspel.firebaseapp.com",
@@ -140,14 +145,16 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const scoresRef = ref(database, "scores");
 
-let startTime;
+/* Game Variables */
+let startTime = 0;
 let canClick = false;
 let lastReaction = null;
+let gameRunning = false;
 
 const gameArea = document.getElementById("gameArea");
 const result = document.getElementById("result");
 
-/* 🔥 Tutorial – bara första gången */
+/* Tutorial */
 window.addEventListener("load", () => {
   if (!localStorage.getItem("tutorialSeen")) {
     document.getElementById("tutorialModal").style.display = "flex";
@@ -159,39 +166,61 @@ window.closeTutorial = function() {
   localStorage.setItem("tutorialSeen", "yes");
 };
 
-/* 🎮 Start Game */
+/* Start Game */
 window.startGame = function() {
+
+  if (gameRunning) return;
+
   result.textContent = "";
   gameArea.className = "red";
   gameArea.textContent = "Vänta på grönt...";
   canClick = false;
+  gameRunning = true;
 
   const randomTime = Math.random() * 3000 + 2000;
 
   setTimeout(() => {
+
+    if (!gameRunning) return;
+
     gameArea.className = "green";
     gameArea.textContent = "KLICKA NU!";
     startTime = Date.now();
     canClick = true;
+
   }, randomTime);
 };
 
+/* Click Logic */
 gameArea.addEventListener("click", () => {
+
+  if (!gameRunning) return;
+
+  // ❌ Klickade för tidigt → rundan avbryts
   if (!canClick) {
-    result.textContent = "❌ För tidigt!";
+    result.textContent = "❌ För tidigt! Tryck på Start igen.";
+    gameArea.className = "red";
+    gameArea.textContent = "Tryck på Start";
+    gameRunning = false;
+    canClick = false;
     return;
   }
 
+  // ✅ Rätt klick
   const reactionTime = Date.now() - startTime;
   lastReaction = reactionTime;
+
   result.textContent = "Din reaktionstid: " + reactionTime + " ms";
   gameArea.className = "red";
   gameArea.textContent = "Tryck på Start igen";
+
+  gameRunning = false;
   canClick = false;
 });
 
-/* 💾 Save Score */
+/* Save Score */
 window.saveScore = function() {
+
   const name = document.getElementById("playerName").value;
 
   if (!name || lastReaction === null) {
@@ -207,25 +236,8 @@ window.saveScore = function() {
   document.getElementById("playerName").value = "";
 };
 
-/* 🏆 Live Leaderboard */
+/* Live Leaderboard */
 onValue(scoresRef, (snapshot) => {
+
   const data = snapshot.val();
-  const scoreList = document.getElementById("scoreList");
-  scoreList.innerHTML = "";
-
-  if (data) {
-    Object.values(data)
-      .sort((a, b) => a.time - b.time)
-      .slice(0, 10)
-      .forEach(score => {
-        const li = document.createElement("li");
-        li.textContent = score.name + " - " + score.time + " ms";
-        scoreList.appendChild(li);
-      });
-  }
-});
-
-</script>
-
-</body>
-</html>
+  const 
