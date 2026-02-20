@@ -1,168 +1,85 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snygg Chatt</title>
-<style>
-* { box-sizing: border-box; margin:0; padding:0; }
-body {
-    font-family: 'Segoe UI', sans-serif;
-    background: #f0f0f0;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-}
+  <meta charset="UTF-8">
+  <title>Roblox Speltids Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: linear-gradient(135deg, #ff4b4b, #ff7676);
+      color: white;
+      margin-top: 100px;
+    }
 
-.chat-container {
-    width: 400px;
-    max-width: 95%;
-    height: 600px;
-    display:flex;
-    flex-direction:column;
-    border-radius: 20px;
-    overflow:hidden;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-    background: white;
-}
+    h1 {
+      font-size: 40px;
+    }
 
-.chat-header {
-    padding: 15px;
-    font-weight: bold;
-    text-align:center;
-    background: #007aff;
-    color: white;
-    font-size: 1.2em;
-}
+    #time {
+      font-size: 35px;
+      margin: 20px;
+    }
 
-.chat-messages {
-    flex:1;
-    padding: 10px;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    overflow-y:auto;
-    background: #e5e5ea;
-}
+    button {
+      padding: 15px 30px;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 10px;
+    }
 
-.message {
-    max-width: 70%;
-    padding: 10px 15px;
-    border-radius: 20px;
-    word-wrap: break-word;
-    font-size: 15px;
-    line-height:1.4;
-    opacity:0;
-    transform: translateY(20px);
-    animation: fadeIn 0.3s forwards;
-}
-
-.user-message {
-    background: #007aff;
-    color: white;
-    align-self: flex-end;
-    border-bottom-right-radius: 0;
-}
-
-.bot-message {
-    background: #e5e5ea;
-    color: black;
-    align-self: flex-start;
-    border-bottom-left-radius: 0;
-}
-
-.chat-input {
-    display:flex;
-    border-top:1px solid #ccc;
-}
-
-.chat-input input {
-    flex:1;
-    padding: 12px;
-    border:none;
-    outline:none;
-    font-size:16px;
-    border-radius:0;
-}
-
-.chat-input button {
-    padding: 12px 20px;
-    border:none;
-    background:#007aff;
-    color:white;
-    cursor:pointer;
-    font-size:16px;
-    transition:0.2s;
-}
-
-.chat-input button:hover {
-    background:#005bb5;
-}
-
-@keyframes fadeIn {
-    to { opacity:1; transform: translateY(0); }
-}
-</style>
+    .start { background: #2ecc71; }
+    .stop { background: #e74c3c; }
+    .reset { background: #3498db; }
+  </style>
 </head>
 <body>
 
-<div class="chat-container">
-    <div class="chat-header">Snap-Style Chatt</div>
-    <div class="chat-messages" id="chatMessages"></div>
-    <div class="chat-input">
-        <input type="text" id="chatInput" placeholder="Skriv ett meddelande...">
-        <button onclick="sendMessage()">Skicka</button>
-    </div>
-</div>
+  <h1>🎮 Roblox Speltids Tracker</h1>
+  <div id="time">0 timmar 0 minuter</div>
 
-<script>
-const chatMessages = document.getElementById("chatMessages");
-const chatInput = document.getElementById("chatInput");
+  <button class="start" onclick="startGame()">Starta</button>
+  <button class="stop" onclick="stopGame()">Stoppa</button>
+  <button class="reset" onclick="resetTime()">Reset</button>
 
-// Hämta meddelanden från localStorage
-let messages = JSON.parse(localStorage.getItem("messages")) || [];
+  <script>
+    let startTime = null;
+    let totalMinutes = parseInt(localStorage.getItem("totalMinutes")) || 0;
 
-function displayMessages() {
-    chatMessages.innerHTML = "";
-    messages.forEach(msg => {
-        const div = document.createElement("div");
-        div.classList.add("message");
-        div.classList.add(msg.user ? "user-message" : "bot-message");
-        div.textContent = msg.text;
-        chatMessages.appendChild(div);
-    });
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
+    function updateDisplay() {
+      let hours = Math.floor(totalMinutes / 60);
+      let minutes = totalMinutes % 60;
+      document.getElementById("time").innerText =
+        hours + " timmar " + minutes + " minuter";
+    }
 
-// Skicka meddelande
-function sendMessage() {
-    const text = chatInput.value.trim();
-    if(!text) return;
+    function startGame() {
+      if (!startTime) {
+        startTime = new Date();
+      }
+    }
 
-    // Användarens meddelande
-    messages.push({text:text, user:true});
-    chatInput.value = "";
-    localStorage.setItem("messages", JSON.stringify(messages));
-    displayMessages();
+    function stopGame() {
+      if (startTime) {
+        let now = new Date();
+        let diff = Math.floor((now - startTime) / 60000);
+        totalMinutes += diff;
+        localStorage.setItem("totalMinutes", totalMinutes);
+        startTime = null;
+        updateDisplay();
+      }
+    }
 
-    // Enkel bot-svar (exempel)
-    setTimeout(()=>{
-        const botResponse = "Bot: " + text.split("").reverse().join("");
-        messages.push({text:botResponse, user:false});
-        localStorage.setItem("messages", JSON.stringify(messages));
-        displayMessages();
-    }, 500);
-}
+    function resetTime() {
+      totalMinutes = 0;
+      localStorage.setItem("totalMinutes", 0);
+      updateDisplay();
+    }
 
-// Skicka med Enter
-chatInput.addEventListener("keydown", e => {
-    if(e.key === "Enter") sendMessage();
-});
-
-displayMessages();
-</script>
+    updateDisplay();
+  </script>
 
 </body>
 </html>
-
