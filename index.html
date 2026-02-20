@@ -2,112 +2,77 @@
 <html lang="sv">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Reaktionsspel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reaktionsspel Online</title>
 
 <style>
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #111;
-    color: white;
-    text-align: center;
-    overflow: hidden;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: white;
+  text-align: center;
 }
 
-h1 {
-    margin: 15px 0;
-    font-size: 1.8rem;
-}
+h1 { margin-top: 20px; }
 
 #gameArea {
-    height: 65vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.15s;
-    border-radius: 20px;
-    margin: 10px;
+  height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+  border-radius: 20px;
+  margin: 20px;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.red {
-    background: #ff3b3b;
-}
-
-.green {
-    background: #00c853;
-}
+.red { background: #ff3b3b; }
+.green { background: #00c853; }
 
 button {
-    padding: 14px 25px;
-    font-size: 1.1rem;
-    border: none;
-    border-radius: 12px;
-    margin: 10px;
-    background: #2196f3;
-    color: white;
-}
-
-button:active {
-    transform: scale(0.95);
+  padding: 12px 25px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 12px;
+  margin: 10px;
+  background: #2196f3;
+  color: white;
+  cursor: pointer;
 }
 
 input {
-    padding: 12px;
-    font-size: 1rem;
-    border-radius: 10px;
-    border: none;
-    margin-top: 10px;
-    width: 80%;
-    max-width: 250px;
-}
-
-#result {
-    font-size: 1.4rem;
-    margin-top: 10px;
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 10px;
+  border: none;
+  margin-top: 10px;
 }
 
 ul {
-    list-style: none;
-    padding: 0;
+  list-style: none;
+  padding: 0;
 }
 
 li {
-    background: #222;
-    margin: 5px auto;
-    padding: 8px;
-    border-radius: 8px;
-    width: 80%;
-    max-width: 300px;
-    font-size: 1rem;
-}
-
-/* Extra mobiloptimering */
-@media (max-width: 500px) {
-    #gameArea {
-        font-size: 1.6rem;
-    }
-
-    h1 {
-        font-size: 1.5rem;
-    }
+  background: #222;
+  margin: 5px auto;
+  padding: 8px;
+  border-radius: 8px;
+  max-width: 300px;
 }
 </style>
 </head>
-
 <body>
 
-<h1>🧠 Reaktionsspel</h1>
+<h1>🎮 Reaktionsspel Online</h1>
 
 <div id="gameArea" class="red">
-    Tryck på Start
+  Tryck på Start
 </div>
 
 <button onclick="startGame()">Start</button>
@@ -115,95 +80,102 @@ li {
 <h2 id="result"></h2>
 
 <div>
-    <h3>🏆 Highscore</h3>
-    <input type="text" id="playerName" placeholder="Ditt namn">
-    <br>
-    <button onclick="saveScore()">Spara resultat</button>
-    <ul id="scoreList"></ul>
+  <h3>🏆 Leaderboard (Live)</h3>
+  <input type="text" id="playerName" placeholder="Ditt namn">
+  <br>
+  <button onclick="saveScore()">Spara resultat</button>
+  <ul id="scoreList"></ul>
 </div>
 
-<script>
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDYoBxAjubyVlgoLK-nV5a8RIxUEe0XEvg",
+  authDomain: "reaktionsspel.firebaseapp.com",
+  databaseURL: "https://reaktionsspel-default-rtdb.firebaseio.com",
+  projectId: "reaktionsspel",
+  storageBucket: "reaktionsspel.firebasestorage.app",
+  messagingSenderId: "806381114919",
+  appId: "1:806381114919:web:6f98fbfd8491b57478e002"
+};
+
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
+const scoresRef = ref(database, "scores");
+
 let startTime;
-let timeout;
 let canClick = false;
 let lastReaction = null;
 
-function startGame() {
-    const gameArea = document.getElementById("gameArea");
-    const result = document.getElementById("result");
+const gameArea = document.getElementById("gameArea");
+const result = document.getElementById("result");
 
-    result.textContent = "";
-    gameArea.className = "red";
-    gameArea.textContent = "Vänta...";
+window.startGame = function() {
+  result.textContent = "";
+  gameArea.className = "red";
+  gameArea.textContent = "Vänta på grönt...";
+  canClick = false;
 
-    canClick = false;
+  const randomTime = Math.random() * 3000 + 2000;
 
-    const randomTime = Math.random() * 3000 + 2000;
+  setTimeout(() => {
+    gameArea.className = "green";
+    gameArea.textContent = "KLICKA NU!";
+    startTime = Date.now();
+    canClick = true;
+  }, randomTime);
+};
 
-    timeout = setTimeout(() => {
-        gameArea.className = "green";
-        gameArea.textContent = "TRYCK NU!";
-        startTime = Date.now();
-        canClick = true;
-    }, randomTime);
-}
+gameArea.addEventListener("click", () => {
+  if (!canClick) {
+    result.textContent = "❌ För tidigt!";
+    return;
+  }
 
-document.getElementById("gameArea").addEventListener("touchstart", handleClick);
-document.getElementById("gameArea").addEventListener("click", handleClick);
+  const reactionTime = Date.now() - startTime;
+  lastReaction = reactionTime;
+  result.textContent = "Din reaktionstid: " + reactionTime + " ms";
+  gameArea.className = "red";
+  gameArea.textContent = "Tryck på Start igen";
+  canClick = false;
+});
 
-function handleClick() {
-    if (!canClick) {
-        clearTimeout(timeout);
-        this.textContent = "För tidigt! 😅";
-        return;
-    }
+window.saveScore = function() {
+  const name = document.getElementById("playerName").value;
 
-    const reactionTime = Date.now() - startTime;
-    lastReaction = reactionTime;
+  if (!name || lastReaction === null) {
+    alert("Spela först och skriv ditt namn!");
+    return;
+  }
 
-    document.getElementById("result").textContent =
-        "Din reaktionstid: " + reactionTime + " ms";
+  push(scoresRef, {
+    name: name,
+    time: lastReaction
+  });
 
-    this.textContent = "Tryck Start för att spela igen";
-    this.className = "red";
-    canClick = false;
-}
+  document.getElementById("playerName").value = "";
+};
 
-function saveScore() {
-    if (lastReaction === null) {
-        alert("Spela först!");
-        return;
-    }
+onValue(scoresRef, (snapshot) => {
+  const data = snapshot.val();
+  const scoreList = document.getElementById("scoreList");
+  scoreList.innerHTML = "";
 
-    const name = document.getElementById("playerName").value;
-    if (name === "") {
-        alert("Skriv ditt namn!");
-        return;
-    }
-
-    let scores = JSON.parse(localStorage.getItem("scores")) || [];
-    scores.push({ name: name, time: lastReaction });
-
-    scores.sort((a, b) => a.time - b.time);
-
-    localStorage.setItem("scores", JSON.stringify(scores));
-    displayScores();
-}
-
-function displayScores() {
-    const scoreList = document.getElementById("scoreList");
-    scoreList.innerHTML = "";
-
-    let scores = JSON.parse(localStorage.getItem("scores")) || [];
-
-    scores.slice(0, 5).forEach(score => {
+  if (data) {
+    Object.values(data)
+      .sort((a, b) => a.time - b.time)
+      .slice(0, 10)
+      .forEach(score => {
         const li = document.createElement("li");
         li.textContent = score.name + " - " + score.time + " ms";
         scoreList.appendChild(li);
-    });
-}
+      });
+  }
+});
 
-displayScores();
 </script>
 
 </body>
