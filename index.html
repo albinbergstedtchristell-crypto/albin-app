@@ -1,89 +1,14 @@
 <!DOCTYPE html>
-<html lang="sv">
-<head>
-  <meta charset="UTF-8">
-  <title>Roblox Speltids Tracker</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: linear-gradient(135deg, #ff4b4b, #ff7676);
-      color: white;
-      margin-top: 100px;
-    }
-
-    #time {
-      font-size: 35px;
-      margin: 20px;
-    }
-
-    button {
-      padding: 15px 30px;
-      font-size: 18px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      margin: 10px;
-    }
-
-    .start { background: #2ecc71; }
-    .stop { background: #e74c3c; }
-    .reset { background: #3498db; }
-  </style>
-</head>
+<html>
 <body>
 
-  <h1>🎮 Roblox Speltids Tracker</h1>
-  <div id="time">0 timmar 0 minuter</div>
+<button id="testBtn">Klicka här</button>
 
-  <button id="startBtn" class="start">Starta</button>
-  <button id="stopBtn" class="stop">Stoppa</button>
-  <button id="resetBtn" class="reset">Reset</button>
-
-  <script>
-    let startTime = null;
-    let totalMinutes = parseInt(localStorage.getItem("totalMinutes")) || 0;
-
-    const timeDisplay = document.getElementById("time");
-    const startBtn = document.getElementById("startBtn");
-    const stopBtn = document.getElementById("stopBtn");
-    const resetBtn = document.getElementById("resetBtn");
-
-    function updateDisplay() {
-      let hours = Math.floor(totalMinutes / 60);
-      let minutes = totalMinutes % 60;
-      timeDisplay.innerText = hours + " timmar " + minutes + " minuter";
-    }
-
-    startBtn.addEventListener("click", function() {
-      if (!startTime) {
-        startTime = new Date();
-        console.log("Startad!");
-      }
-    });
-
-    stopBtn.addEventListener("click", function() {
-      if (startTime) {
-        let now = new Date();
-        let diff = Math.floor((now - startTime) / 60000);
-        totalMinutes += diff;
-        localStorage.setItem("totalMinutes", totalMinutes);
-        startTime = null;
-        updateDisplay();
-        console.log("Stoppad!");
-      }
-    });
-
-    resetBtn.addEventListener("click", function() {
-      totalMinutes = 0;
-      localStorage.setItem("totalMinutes", 0);
-      startTime = null;
-      updateDisplay();
-      console.log("Reset!");
-    });
-
-    updateDisplay();
-  </script>
+<script>
+  document.getElementById("testBtn").addEventListener("click", function() {
+    alert("Det funkar!");
+  });
+</script>
 
 </body>
 </html>
