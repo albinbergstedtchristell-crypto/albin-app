@@ -12,10 +12,6 @@
       margin-top: 100px;
     }
 
-    h1 {
-      font-size: 40px;
-    }
-
     #time {
       font-size: 35px;
       margin: 20px;
@@ -40,28 +36,33 @@
   <h1>🎮 Roblox Speltids Tracker</h1>
   <div id="time">0 timmar 0 minuter</div>
 
-  <button class="start" onclick="startGame()">Starta</button>
-  <button class="stop" onclick="stopGame()">Stoppa</button>
-  <button class="reset" onclick="resetTime()">Reset</button>
+  <button id="startBtn" class="start">Starta</button>
+  <button id="stopBtn" class="stop">Stoppa</button>
+  <button id="resetBtn" class="reset">Reset</button>
 
   <script>
     let startTime = null;
     let totalMinutes = parseInt(localStorage.getItem("totalMinutes")) || 0;
 
+    const timeDisplay = document.getElementById("time");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
     function updateDisplay() {
       let hours = Math.floor(totalMinutes / 60);
       let minutes = totalMinutes % 60;
-      document.getElementById("time").innerText =
-        hours + " timmar " + minutes + " minuter";
+      timeDisplay.innerText = hours + " timmar " + minutes + " minuter";
     }
 
-    function startGame() {
+    startBtn.addEventListener("click", function() {
       if (!startTime) {
         startTime = new Date();
+        console.log("Startad!");
       }
-    }
+    });
 
-    function stopGame() {
+    stopBtn.addEventListener("click", function() {
       if (startTime) {
         let now = new Date();
         let diff = Math.floor((now - startTime) / 60000);
@@ -69,14 +70,17 @@
         localStorage.setItem("totalMinutes", totalMinutes);
         startTime = null;
         updateDisplay();
+        console.log("Stoppad!");
       }
-    }
+    });
 
-    function resetTime() {
+    resetBtn.addEventListener("click", function() {
       totalMinutes = 0;
       localStorage.setItem("totalMinutes", 0);
+      startTime = null;
       updateDisplay();
-    }
+      console.log("Reset!");
+    });
 
     updateDisplay();
   </script>
