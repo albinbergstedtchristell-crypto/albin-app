@@ -91,6 +91,9 @@ li {
 </head>
 <body>
 
+<!-- 🔊 Ljud -->
+<audio id="goSound" src="https://www.soundjay.com/buttons/sounds/beep-07.mp3"></audio>
+
 <!-- 🔥 Tutorial Popup -->
 <div id="tutorialModal" class="modal">
   <div class="modal-content">
@@ -127,7 +130,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "DIN_API_KEY",
+  apiKey: "DIN_API_KEY_HÄR",
   authDomain: "reaktionsspel.firebaseapp.com",
   databaseURL: "https://reaktionsspel-default-rtdb.firebaseio.com",
   projectId: "reaktionsspel",
@@ -147,7 +150,7 @@ let lastReaction = null;
 const gameArea = document.getElementById("gameArea");
 const result = document.getElementById("result");
 
-/* 🔥 Tutorial – bara första gången */
+/* 🔥 Tutorial – visas bara första gången */
 window.addEventListener("load", () => {
   if (!localStorage.getItem("tutorialSeen")) {
     document.getElementById("tutorialModal").style.display = "flex";
@@ -173,6 +176,10 @@ window.startGame = function() {
     gameArea.textContent = "KLICKA NU!";
     startTime = Date.now();
     canClick = true;
+
+    // 🔊 Spela ljud när det blir grönt
+    document.getElementById("goSound").play();
+
   }, randomTime);
 };
 
@@ -190,7 +197,7 @@ gameArea.addEventListener("click", () => {
   canClick = false;
 });
 
-/* 💾 Save Score */
+/* 💾 Spara score */
 window.saveScore = function() {
   const name = document.getElementById("playerName").value;
 
@@ -207,7 +214,7 @@ window.saveScore = function() {
   document.getElementById("playerName").value = "";
 };
 
-/* 🏆 Live Leaderboard */
+/* 🏆 Live leaderboard */
 onValue(scoresRef, (snapshot) => {
   const data = snapshot.val();
   const scoreList = document.getElementById("scoreList");
@@ -218,14 +225,4 @@ onValue(scoresRef, (snapshot) => {
       .sort((a, b) => a.time - b.time)
       .slice(0, 10)
       .forEach(score => {
-        const li = document.createElement("li");
-        li.textContent = score.name + " - " + score.time + " ms";
-        scoreList.appendChild(li);
-      });
-  }
-});
-
-</script>
-
-</body>
-</html>
+        const li = docu
